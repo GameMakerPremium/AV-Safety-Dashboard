@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AV Safety Observatory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: sober federal-portal frame (utility bar, masthead, red-ruled nav),
+   then a scanning dashboard: summary tiles, live feed, maps, tables, case files. */
+:root{
+  /* Swiss federal design system tokens: primary red, secondary slate, Noto Sans */
+  --bg:#f0f4f7; --panel:#ffffff; --ink:#1c2834; --ink-2:#46596b; --muted:#828e9a;
+  --line:#dfe4e9; --line-2:#f0f4f7; --accent:#d8232a; --accent-ink:#ffffff; --link:#2f4356;
+  --slate:#2f4356; --slate-2:#263645; --on-slate:#ffffff; --on-slate-2:#dfe4e9;
+  --warn-bg:#fff4cc; --warn-ink:#5a4300;
+  --good:#0a7d33; --caution:#a86400; --bad:#c22a2a;
+  --font-body:"Noto Sans", "Helvetica Neue", Arial, system-ui, sans-serif;
+  --font-display:"Noto Sans", Arial, system-ui, sans-serif;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s6:#008300; --s7:#6250d6; --s8:#e34948;
+  --q1:#cde2fb; --q2:#9ec5f4; --q3:#6da7ec; --q4:#3987e5; --q5:#256abf; --q6:#184f95; --q7:#0d366b;
+  --grid:#e5e7eb; --axis:#acb4bd; --surface:#ffffff;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#131b22; --panel:#1c2834; --ink:#f0f4f7; --ink-2:#acb4bd; --muted:#828e9a;
+    --line:#2f4356; --line-2:#263645; --accent:#e53940; --accent-ink:#ffffff; --link:#acc4e0;
+    --slate:#0d141a; --slate-2:#0d141a; --on-slate:#ffffff; --on-slate-2:#acb4bd;
+    --warn-bg:#3a3110; --warn-ink:#f6dc8a;
+    --good:#3cc46b; --caution:#e2a33a; --bad:#f06a6a;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+    --q1:#1d2c3f; --q2:#184f95; --q3:#1c5cab; --q4:#2a78d6; --q5:#5598e7; --q6:#86b6ef; --q7:#cde2fb;
+    --grid:#263645; --axis:#46596b; --surface:#1c2834;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#131b22; --panel:#1c2834; --ink:#f0f4f7; --ink-2:#acb4bd; --muted:#828e9a;
+  --line:#2f4356; --line-2:#263645; --accent:#e53940; --accent-ink:#ffffff; --link:#acc4e0;
+  --slate:#0d141a; --slate-2:#0d141a; --on-slate:#ffffff; --on-slate-2:#acb4bd;
+  --warn-bg:#3a3110; --warn-ink:#f6dc8a;
+  --good:#3cc46b; --caution:#e2a33a; --bad:#f06a6a;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+  --q1:#1d2c3f; --q2:#184f95; --q3:#1c5cab; --q4:#2a78d6; --q5:#5598e7; --q6:#86b6ef; --q7:#cde2fb;
+  --grid:#263645; --axis:#46596b; --surface:#1c2834;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto} *{animation:none!important;transition:none!important}}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.5}
+a{color:var(--link)}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--link);outline-offset:2px}
+h1,h2,h3{text-wrap:balance;margin:0}
+.wrap{max-width:1280px;margin:0 auto;padding:0 20px}
+.num{font-variant-numeric:tabular-nums}
+
+/* prototype banner */
+.proto{background:var(--warn-bg);color:var(--warn-ink);font-size:13px;border-bottom:1px solid var(--line)}
+.proto .wrap{display:flex;gap:10px;align-items:flex-start;padding-top:7px;padding-bottom:7px}
+.proto strong{white-space:nowrap}
+
+/* utility + masthead */
+.util{background:var(--slate);font-size:13px;color:var(--on-slate-2)}
+.util .wrap{display:flex;justify-content:space-between;align-items:center;min-height:34px;gap:12px;flex-wrap:wrap}
+.langs{display:flex;gap:2px}
+.langs button{border:0;background:none;color:var(--on-slate-2);font:inherit;padding:4px 7px;cursor:pointer;border-radius:3px}
+.langs button[aria-pressed="true"]{color:var(--on-slate);font-weight:700;text-decoration:underline;text-underline-offset:4px}
+.util-links{display:flex;gap:16px}
+.util-links a{color:var(--on-slate-2);text-decoration:none} .util-links a:hover{color:var(--on-slate)}
+.mast{background:var(--panel);border-bottom:1px solid var(--line)}
+.mast .wrap{display:flex;align-items:center;justify-content:space-between;gap:20px;padding-top:18px;padding-bottom:18px;flex-wrap:wrap}
+.brand{display:flex;gap:14px;align-items:center;text-decoration:none;color:inherit}
+.brand svg{flex:none}
+.brand .t1{font-size:12px;color:var(--ink-2);letter-spacing:.02em}
+.brand .t2{font-size:22px;font-weight:700;line-height:1.15}
+.brand .t3{font-size:13px;color:var(--ink-2)}
+.search{display:flex;border:1px solid var(--line);border-radius:3px;overflow:hidden;background:var(--panel);min-width:260px}
+.search input{border:0;background:transparent;color:var(--ink);font:inherit;padding:8px 10px;flex:1;min-width:0}
+.search button{border:0;background:var(--accent);color:var(--accent-ink);padding:0 14px;cursor:pointer;font:inherit;font-weight:700}
+
+nav.main{background:var(--panel);border-bottom:3px solid var(--accent);position:sticky;top:0;z-index:20}
+nav.main ul{list-style:none;margin:0;padding:0;display:flex;overflow-x:auto}
+nav.main a{display:block;padding:12px 16px;color:var(--ink);text-decoration:none;font-weight:700;font-size:14px;white-space:nowrap;border-bottom:3px solid transparent;margin-bottom:-3px}
+nav.main a:hover,nav.main a.on{border-bottom-color:var(--ink)}
+.crumbs{font-size:13px;color:var(--ink-2);padding:14px 0 4px}
+.crumbs a{color:var(--ink-2)}
+
+/* page head */
+.pagehead{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:end;padding:8px 0 18px}
+.pagehead h1{font-family:var(--font-display);font-size:34px;line-height:1.15}
+.lead{max-width:72ch;color:var(--ink-2);margin:10px 0 0;font-size:16px}
+.live-ctl{display:flex;flex-direction:column;align-items:flex-end;gap:8px;font-size:13px;color:var(--ink-2)}
+.livepill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--panel);border-radius:999px;padding:5px 12px;font-weight:700;color:var(--ink)}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(10,125,51,.5);animation:pulse 2s infinite}
+.paused .dot{background:var(--muted);animation:none}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(10,125,51,.45)}70%{box-shadow:0 0 0 8px rgba(10,125,51,0)}100%{box-shadow:0 0 0 0 rgba(10,125,51,0)}}
+.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-size:13px;font-weight:700;padding:6px 12px;border-radius:3px;cursor:pointer}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+
+/* sections */
+section.block{padding:26px 0 8px;scroll-margin-top:60px}
+.sec-h{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:8px;margin-bottom:16px}
+.sec-h h2{font-family:var(--font-display);font-size:24px}
+.sec-h p{margin:0;color:var(--ink-2);font-size:14px;max-width:70ch}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:18px}
+.panel h3{font-size:16px;margin-bottom:4px}
+.panel .sub{font-size:13px;color:var(--ink-2);margin:0 0 12px}
+.grid{display:grid;gap:16px}
+.g-2{grid-template-columns:minmax(0,1.65fr) minmax(0,1fr)}
+.g-2e{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media (max-width:900px){.g-2,.g-2e{grid-template-columns:minmax(0,1fr)} .pagehead{grid-template-columns:1fr} .live-ctl{align-items:flex-start}}
+
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;border-radius:3px;padding:2px 8px;border:1px solid var(--line);background:var(--panel);color:var(--ink-2);white-space:nowrap}
+.chip.sim{border-color:#c9a400;color:var(--warn-ink);background:var(--warn-bg)}
+.chip.real{border-color:var(--link);color:var(--link)}
+.sw{width:10px;height:10px;border-radius:2px;display:inline-block;flex:none}
+.src{font-size:12px;color:var(--muted);margin-top:8px}
+
+/* KPI tiles */
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}
+@media (max-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--panel);border:1px solid var(--line);border-top:4px solid var(--ink);border-radius:3px;padding:12px 14px;min-width:0}
+.kpi.k-red{border-top-color:var(--s8)} .kpi.k-blue{border-top-color:var(--s1)} .kpi.k-org{border-top-color:var(--s2)} .kpi.k-grn{border-top-color:var(--good)}
+.kpi .lab{font-size:12.5px;color:var(--ink-2);font-weight:700;line-height:1.3;min-height:2.6em}
+.kpi .val{font-size:30px;font-weight:700;line-height:1.1;margin-top:6px}
+.kpi .foot{font-size:12px;color:var(--ink-2);margin-top:4px}
+.kpi .delta{color:var(--good);font-weight:700}
+.flash{animation:flash 1.2s ease-out}
+@keyframes flash{0%{background:var(--warn-bg)}100%{background:var(--panel)}}
+
+/* legend + charts */
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--ink-2);margin:4px 0 10px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:3px;overflow:hidden}
+.seg button{border:0;background:var(--panel);color:var(--ink-2);font:inherit;font-size:12.5px;font-weight:700;padding:5px 10px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.chart{position:relative;width:100%}
+.chart svg{display:block;width:100%;height:auto;overflow:visible}
+.chart text{fill:var(--muted);font-size:11px;font-family:var(--font-body)}
+.tip{position:absolute;pointer-events:none;background:var(--panel);border:1px solid var(--line);box-shadow:0 4px 18px rgba(0,0,0,.14);border-radius:3px;padding:8px 10px;font-size:12px;color:var(--ink);min-width:170px;z-index:5;display:none}
+.tip .tt{font-weight:700;margin-bottom:4px}
+.tip .row{display:flex;justify-content:space-between;gap:12px}
+.tip .row span:first-child{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
+.hd{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+
+/* feed */
+.feed{list-style:none;margin:0;padding:0;max-height:430px;overflow:auto}
+.feed li{border-bottom:1px solid var(--line-2)}
+.feed button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:4px minmax(0,1fr) auto;gap:10px;width:100%;padding:9px 4px;cursor:pointer}
+.feed button:hover{background:var(--line-2)}
+.feed button:focus-visible{outline:3px solid var(--link)}
+.feed .bar{border-radius:2px}
+.feed .ti{font-size:13.5px;font-weight:700;color:var(--ink);line-height:1.3}
+.feed .me{font-size:12px;color:var(--ink-2)}
+.feed .tm{font-size:12px;color:var(--muted);white-space:nowrap}
+.feed li.new{animation:flash 1.6s ease-out}
+
+/* pyramid */
+.pyr-row{display:grid;grid-template-columns:160px minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:13px;padding:3px 0}
+.pyr-row .nm{color:var(--ink-2);text-align:right}
+.pyr-row .tr{display:flex;justify-content:center}
+.pyr-row .b{height:22px;border-radius:3px;min-width:4px}
+.pyr-row .ct{font-weight:700}
+.pyr-split{border-top:2px dashed var(--ink-2);margin:6px 0 6px 170px;position:relative}
+.pyr-split span{position:absolute;right:0;top:-10px;background:var(--panel);font-size:11.5px;color:var(--ink-2);padding:0 6px;font-weight:700}
+@media (max-width:560px){.pyr-row{grid-template-columns:110px minmax(0,1fr) 50px} .pyr-split{margin-left:120px}}
+
+/* map */
+.map-wrap{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px}
+@media (max-width:900px){.map-wrap{grid-template-columns:minmax(0,1fr)}}
+.tile{cursor:pointer}
+.tile rect{stroke:var(--panel);stroke-width:2}
+.tile.sel rect{stroke:var(--ink);stroke-width:3}
+.tile text.cd{font-size:13px;font-weight:700}
+.tile text.vl{font-size:10px}
+.canton-detail dl{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;margin:8px 0 12px;font-size:13.5px}
+.canton-detail dt{color:var(--ink-2)}
+.canton-detail dd{margin:0;font-weight:700}
+.mini-bars .r{display:grid;grid-template-columns:150px minmax(0,1fr) 44px;gap:8px;align-items:center;font-size:12.5px;padding:2px 0}
+.mini-bars .tr{background:var(--line-2);height:10px;border-radius:2px;overflow:hidden}
+.mini-bars .f{height:100%;border-radius:2px}
+.ramp{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink-2);margin-top:8px}
+.ramp .g{height:10px;width:160px;border-radius:2px;background:linear-gradient(90deg,var(--q1),var(--q3),var(--q5),var(--q7))}
+
+/* tables */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:3px;background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th,td{padding:9px 10px;border-bottom:1px solid var(--line-2);text-align:left;vertical-align:middle}
+th{font-size:12px;color:var(--ink-2);font-weight:700;background:var(--line-2);white-space:nowrap}
+td.r,th.r{text-align:right}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--line-2)}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;border:1px solid currentColor;white-space:nowrap}
+.pill.good{color:var(--good)} .pill.caution{color:var(--caution)} .pill.bad{color:var(--bad)} .pill.neutral{color:var(--ink-2)}
+.pill::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:end;margin-bottom:12px}
+.filters label{display:flex;flex-direction:column;font-size:12px;color:var(--ink-2);font-weight:700;gap:3px}
+.filters select,.filters input[type="search"]{font:inherit;font-size:13.5px;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:6px 8px;min-width:130px}
+.filters .chk{flex-direction:row;align-items:center;gap:6px;font-size:13px;padding-bottom:7px}
+.pager{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:13px;color:var(--ink-2);flex-wrap:wrap;gap:8px}
+
+/* cases */
+.cases{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+@media (max-width:1000px){.cases{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.cases{grid-template-columns:minmax(0,1fr)}}
+.case{all:unset;box-sizing:border-box;cursor:pointer;background:var(--panel);border:1px solid var(--line);border-left:5px solid var(--accent);border-radius:3px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.case:hover{border-color:var(--ink-2);border-left-color:var(--accent)}
+.case:focus-visible{outline:3px solid var(--link)}
+.case .k{font-size:12px;color:var(--ink-2);font-weight:700}
+.case h3{font-size:16px;line-height:1.3}
+.case p{margin:0;font-size:13.5px;color:var(--ink-2)}
+.tags{display:flex;flex-wrap:wrap;gap:5px}
+.case .act{font-size:12.5px;font-weight:700;color:var(--ink)}
+.case .more{font-size:13px;color:var(--link);font-weight:700;margin-top:auto}
+
+/* calculator */
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:18px}
+@media (max-width:900px){.calc{grid-template-columns:minmax(0,1fr)}}
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label{font-size:13px;font-weight:700}
+.field small{color:var(--ink-2);font-size:12px}
+.field input,.field select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:7px 9px}
+.presets{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.verdict{border-left:5px solid var(--muted);padding:10px 14px;background:var(--line-2);border-radius:3px;margin:10px 0}
+.verdict.good{border-left-color:var(--good)} .verdict.bad{border-left-color:var(--bad)} .verdict.caution{border-left-color:var(--caution)}
+.verdict strong{display:block;font-size:16px}
+.claims{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+@media (max-width:760px){.claims{grid-template-columns:minmax(0,1fr)}}
+.claim .big{font-family:var(--font-display);font-size:28px;font-weight:700}
+.claim ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink-2)}
+.claim li{margin:3px 0}
+
+/* proposal */
+.req td:first-child{font-weight:700}
+.lens{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+@media (max-width:1000px){.lens{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.lens{grid-template-columns:minmax(0,1fr)}}
+.lens .panel h3{font-size:15px}
+.lens .panel p{font-size:13.5px;color:var(--ink-2);margin:6px 0}
+.lens .panel .ex{font-size:12.5px;color:var(--ink)}
+.swiss{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:4px}
+@media (max-width:1000px){.swiss{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){.swiss{grid-template-columns:minmax(0,1fr)}}
+.swiss .panel{padding:12px 14px}
+.swiss .d{font-size:12px;font-weight:700;color:var(--accent);letter-spacing:.02em}
+.swiss p{margin:4px 0 0;font-size:13.5px}
+
+/* modal */
+.modal{position:fixed;inset:0;background:rgba(10,12,15,.55);display:none;align-items:flex-start;justify-content:center;padding:4vh 12px;z-index:50;overflow:auto}
+.modal.open{display:flex}
+.dlg{background:var(--panel);color:var(--ink);border-radius:5px;max-width:900px;width:100%;border-top:5px solid var(--accent);box-shadow:0 20px 60px rgba(0,0,0,.35)}
+.dlg-h{display:flex;justify-content:space-between;gap:12px;padding:18px 22px 10px;align-items:flex-start}
+.dlg-h h2{font-family:var(--font-display);font-size:22px;line-height:1.25}
+.dlg-h .meta{font-size:13px;color:var(--ink-2);margin-top:6px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.x{border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:20px;line-height:1;width:36px;height:36px;border-radius:3px;cursor:pointer;flex:none}
+.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);padding:0 22px;overflow-x:auto}
+.tabs button{border:0;background:none;font:inherit;font-size:13.5px;font-weight:700;color:var(--ink-2);padding:10px 12px;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabp{padding:18px 22px 24px;font-size:14.5px}
+.tabp p{margin:0 0 10px;max-width:75ch}
+.tabp h4{margin:14px 0 6px;font-size:14px}
+.tabp ul{margin:4px 0 10px;padding-left:20px}
+.tabp li{margin:4px 0}
+.kv{display:grid;grid-template-columns:200px 1fr;gap:6px 14px;font-size:13.5px;margin-bottom:12px}
+.kv dt{color:var(--ink-2)} .kv dd{margin:0;font-weight:700}
+@media (max-width:560px){.kv{grid-template-columns:1fr}}
+.doc{border:1px solid var(--line);border-radius:3px;padding:14px 16px;background:var(--bg);font-size:14px}
+.doc .dh{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--ink-2);border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:10px;font-weight:700}
+.flag{border-left:4px solid var(--bad);background:var(--line-2);padding:8px 12px;font-size:13.5px;margin:10px 0;border-radius:2px}
+.ok{color:var(--good);font-weight:700} .no{color:var(--bad);font-weight:700}
+
+footer{margin-top:40px;background:var(--slate);font-size:13px;color:var(--on-slate-2)} footer a{color:var(--on-slate)}
+footer .wrap{padding-top:22px;padding-bottom:30px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}
+@media (max-width:800px){footer .wrap{grid-template-columns:1fr}}
+footer h4{color:var(--on-slate);margin:0 0 8px;font-size:14px}
+footer ul{margin:0;padding-left:16px}
+footer li{margin:3px 0}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:3px;font-size:13.5px;z-index:60;display:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+
+<div class="proto" role="note">
+  <div class="wrap"><strong>Prototype</strong><span>ETH Zurich student project (AI Safety, GESS, topic 12). This is not an official website of the Swiss Confederation. Swiss operating figures are a <b>simulated 2028 scenario</b> showing how the proposed register would work. The case files and the "Evidence check" figures are real and sourced.</span></div>
+</div>
+
+<div class="util">
+  <div class="wrap">
+    <div class="langs" role="group" aria-label="Language">
+      <button type="button" data-lang="DE" aria-pressed="false">DE</button>
+      <button type="button" data-lang="FR" aria-pressed="false">FR</button>
+      <button type="button" data-lang="IT" aria-pressed="false">IT</button>
+      <button type="button" data-lang="EN" aria-pressed="true">EN</button>
+    </div>
+    <div class="util-links"><a href="#proposal">For policymakers</a><a href="#cases">Case files</a><a href="#sources">Sources</a></div>
+  </div>
+</div>
+
+<header class="mast">
+  <div class="wrap">
+    <a class="brand" href="#overview" aria-label="AV Safety Observatory, home">
+      <svg width="52" height="52" viewBox="0 0 52 52" aria-hidden="true"><rect width="52" height="52" rx="6" fill="var(--accent)"/><path d="M14 42 L22 10 M38 42 L30 10" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><path d="M26 16v5M26 27v5M26 38v3" stroke="#fff" stroke-width="3" stroke-linecap="round"/></svg>
+      <div>
+        <div class="t1">Proposal for the Swiss Confederation and the cantons</div>
+        <div class="t2">AV Safety Observatory</div>
+        <div class="t3">Independent register of automated-vehicle incidents</div>
+      </div>
+    </a>
+    <form class="search" role="search" id="searchForm">
+      <label class="sr" for="q">Search the register</label>
+      <input id="q" type="search" placeholder="Search incidents, e.g. Lugano or cyclist">
+      <button type="submit">Search</button>
+    </form>
+  </div>
+</header>
+
+<nav class="main" aria-label="Main">
+  <div class="wrap"><ul>
+    <li><a href="#overview" class="on">Overview</a></li>
+    <li><a href="#regions">Regions</a></li>
+    <li><a href="#operators">Operators</a></li>
+    <li><a href="#register">Incident register</a></li>
+    <li><a href="#cases">Case files</a></li>
+    <li><a href="#evidence">Evidence check</a></li>
+    <li><a href="#proposal">Our proposal</a></li>
+  </ul></div>
+</nav>
+
+<main class="wrap">
+  <div class="crumbs"><a href="#overview">Home</a> › Mobility › Automated driving › AV Safety Observatory</div>
+
+  <div class="pagehead" id="overview">
+    <div>
+      <h1>Robotaxis: how safe is safe enough?</h1>
+      <p class="lead">Today, the safety evidence for driverless vehicles comes mostly from the companies that operate them. This observatory shows what an independent, public register could look like in Switzerland: every type of incident, not only crashes, cross-checked against police, insurer and remote-operation data.</p>
+    </div>
+    <div class="live-ctl">
+      <span class="livepill" id="livePill"><span class="dot" aria-hidden="true"></span><span id="liveText">Live, scenario 2028</span></span>
+      <span id="clock" class="num">–</span>
+      <button class="btn" id="pauseBtn" type="button" aria-pressed="false">Pause live feed</button>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis" aria-live="polite"></div>
+  <p class="src"><span class="chip sim">Simulated</span> Scenario: 5 fictional operators, about 400 driverless vehicles in 12 cantons, 1 Jan to 6 Nov 2028. New events arrive every few seconds to show the live register.</p>
+
+  <section class="block" aria-labelledby="h-comp">
+    <div class="grid g-2">
+      <div class="panel">
+        <div class="hd">
+          <div>
+            <h3 id="h-comp">Reported events per month, by type</h3>
+            <p class="sub">Crash statistics show only the two collision types at the bottom. The register counts every type.</p>
+          </div>
+          <div class="seg" role="group" aria-label="Event types shown">
+            <button type="button" data-mode="all" aria-pressed="true">All event types</button>
+            <button type="button" data-mode="col" aria-pressed="false">Collisions only</button>
+            <button type="button" data-mode="tbl" aria-pressed="false">Table</button>
+          </div>
+        </div>
+        <div class="legend" id="typeLegend"></div>
+        <div class="chart" id="monthChart"></div>
+        <p class="src">Source: mandatory operator reports, cross-checked by the proposed investigation unit (simulated data).</p>
+      </div>
+      <div class="panel">
+        <div class="hd"><div><h3>Live incident feed</h3><p class="sub">Select an event to open all reports about it.</p></div></div>
+        <ul class="feed" id="feed"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" aria-labelledby="h-pyr">
+    <div class="grid g-2e">
+      <div class="panel">
+        <h3 id="h-pyr">What crash statistics show, and what they miss</h3>
+        <p class="sub">Events year to date by severity. Bar width uses a logarithmic scale so rare, severe events stay visible.</p>
+        <div id="pyramid"></div>
+        <p class="src">Simulated scenario data.</p>
+      </div>
+      <div class="panel">
+        <h3>Why the full picture matters</h3>
+        <p class="sub">Course lens (AI Safety and Human Factors, Days 1 and 2)</p>
+        <ul style="margin:0;padding-left:18px;font-size:14px;color:var(--ink-2)">
+          <li style="margin:6px 0"><b style="color:var(--ink)">Autonomy is partly an illusion.</b> Remote operators step in thousands of times a year. If those events are not reported, a fleet looks more autonomous than it is (Bradshaw et al., 2013, Myth 5).</li>
+          <li style="margin:6px 0"><b style="color:var(--ink)">Safety is more than the absence of crashes.</b> Near-misses, violations and stranded vehicles show where the system is near its limits before anyone is hurt (Safety-II, Hollnagel).</li>
+          <li style="margin:6px 0"><b style="color:var(--ink)">Fleets fail together.</b> One software behaviour is copied to every vehicle, so one weakness can strand hundreds of cars at once (see the San Francisco blackout case).</li>
+          <li style="margin:6px 0"><b style="color:var(--ink)">Observability builds trust.</b> People can rely on a system when they can see its state and predict its behaviour (Johnson et al., 2018). A public register gives the whole of society that view.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="regions" aria-labelledby="h-reg">
+    <div class="sec-h"><h2 id="h-reg">Breakdown by region</h2><p>Driverless vehicles may only run in operating areas approved by a canton. Select a canton for its details.</p></div>
+    <div class="map-wrap">
+      <div class="panel">
+        <div class="hd">
+          <div><h3>Cantons with approved operating areas</h3><p class="sub" id="mapSub">Reported events per million km</p></div>
+          <div class="seg" role="group" aria-label="Map metric">
+            <button type="button" data-m="rate" aria-pressed="true">Events per M km</button>
+            <button type="button" data-m="count" aria-pressed="false">Events</button>
+            <button type="button" data-m="inj" aria-pressed="false">Injury collisions</button>
+          </div>
+        </div>
+        <div class="chart" id="map"></div>
+        <div class="ramp"><span id="rampLo">low</span><span class="g"></span><span id="rampHi">high</span><span style="margin-left:10px;display:inline-flex;align-items:center;gap:6px"><span class="sw" style="background:var(--line-2);border:1px solid var(--line)"></span>no approved operating area</span></div>
+        <p class="src">Tile map: each square is one canton, placed roughly where it lies. Simulated scenario data.</p>
+      </div>
+      <div class="panel canton-detail" id="cantonDetail"></div>
+    </div>
+  </section>
+
+  <section class="block" id="operators" aria-labelledby="h-op">
+    <div class="sec-h"><h2 id="h-op">Breakdown by operator</h2><p>Who operates, how much they drive, how often their vehicles are involved in events, and how much of their data the authorities can check.</p></div>
+    <div class="tbl-wrap"><table id="opTable"></table></div>
+    <p class="src"><span class="chip sim">Fictional operators</span> Collision rate = collisions (injury and property damage) per million km, with a 95% confidence interval (exact Poisson). Dashed line: illustrative human benchmark of 2.0 per million km.</p>
+    <div class="grid g-2e" style="margin-top:16px">
+      <div class="panel">
+        <h3>Who caused the collision? Operator claim vs independent finding</h3>
+        <p class="sub">Share of investigated collisions where the automated system or its remote operator was found at fault.</p>
+        <div class="legend"><span><span class="sw" style="background:var(--muted)"></span>Operator's own report</span><span><span class="sw" style="background:var(--s1)"></span>Independent investigation</span></div>
+        <div class="chart" id="faultChart"></div>
+        <p class="src">A large gap means the operator's account cannot be taken at face value. Simulated data.</p>
+      </div>
+      <div class="panel">
+        <h3>Who causes the events?</h3>
+        <p class="sub">Fault as found by the investigation, all collisions and near-misses year to date.</p>
+        <div id="faultMix"></div>
+        <p class="src">"Remote operator" = a human driving the vehicle from a control centre at the time of the event. Simulated data.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="register" aria-labelledby="h-rg">
+    <div class="sec-h"><h2 id="h-rg">Incident register</h2><p>Every reported event. Select a row to read the police, operator, investigation and remote-operation records, plus measures and sanctions.</p></div>
+    <div class="filters" id="filters">
+      <label for="fType">Type<select id="fType"></select></label>
+      <label for="fCanton">Canton<select id="fCanton"></select></label>
+      <label for="fOp">Operator<select id="fOp"></select></label>
+      <label for="fSev">Severity<select id="fSev"></select></label>
+      <label for="fVer">Verification<select id="fVer"></select></label>
+      <label for="fText">Search<input id="fText" type="search" placeholder="Place, keyword, ID"></label>
+      <label class="chk" for="fDisc"><input id="fDisc" type="checkbox"> Only where operator and investigation disagree</label>
+      <button type="button" class="btn" id="fReset">Reset</button>
+      <button type="button" class="btn" id="copyCsv">Copy as CSV</button>
+    </div>
+    <div class="tbl-wrap"><table id="regTable"></table></div>
+    <div class="pager"><span id="regCount" class="num"></span><span><button class="btn" id="prev" type="button">Previous</button> <span id="pageInfo" class="num"></span> <button class="btn" id="next" type="button">Next</button></span></div>
+  </section>
+
+  <section class="block" id="cases" aria-labelledby="h-cs">
+    <div class="sec-h"><h2 id="h-cs">Case files: real incidents and what followed</h2><p>Documented incidents from the USA, where robotaxis already operate at scale. Each file sets the authorities' record, the company's account, independent findings, company measures and regulator actions side by side.</p></div>
+    <div class="cases" id="caseGrid"></div>
+  </section>
+
+  <section class="block" id="evidence" aria-labelledby="h-ev">
+    <div class="sec-h"><h2 id="h-ev">Evidence check: can we trust the numbers?</h2><p>Operators publish large crash statistics. This tool shows how much those numbers can actually prove, and what is missing when the company produces the evidence itself.</p></div>
+    <div class="panel">
+      <h3>How much does a crash count prove?</h3>
+      <p class="sub">Enter an observed number of events and the distance driven. The tool computes the rate with its confidence interval and compares it with a human benchmark.</p>
+      <div class="calc">
+        <div>
+          <div class="presets" role="group" aria-label="Examples">
+            <button type="button" class="btn" data-p="swissre">Waymo × Swiss Re injury claims (real)</button>
+            <button type="button" class="btn" data-p="pilot">Fatalities, small Swiss pilot</button>
+            <button type="button" class="btn" data-p="scen">This scenario: injury collisions</button>
+          </div>
+          <div class="field"><label for="cEv">Observed events</label><input id="cEv" type="number" min="0" step="1" value="2"></div>
+          <div class="field"><label for="cKm">Distance driven (million km)</label><input id="cKm" type="number" min="0.001" step="0.01" value="40.72"></div>
+          <div class="field"><label for="cBm">Human benchmark (events per million km)</label><input id="cBm" type="number" min="0" step="0.0001" value="0.6385"><small id="cBmNote">Expected rate for human drivers on the same roads.</small></div>
+          <div class="field"><label for="cCl">Confidence level</label><select id="cCl"><option value="0.90">90%</option><option value="0.95" selected>95%</option><option value="0.99">99%</option></select></div>
+        </div>
+        <div>
+          <div class="chart" id="ciChart"></div>
+          <div class="verdict" id="verdict"></div>
+          <p id="calcNote" style="font-size:13.5px;color:var(--ink-2);margin:6px 0 0"></p>
+          <p style="font-size:13px;color:var(--ink-2);margin:10px 0 0">For scale: a RAND study (Kalra and Paddock, 2016) estimated that a fleet would need about 275 million failure-free miles (about 440 million km) to show with 95% confidence that its fatality rate is lower than that of US human drivers.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="claims" style="margin-top:16px">
+      <div class="panel claim">
+        <span class="chip real">Real · company data</span>
+        <h3 style="margin-top:8px">Waymo Safety Impact Hub</h3>
+        <div class="big">95% fewer</div>
+        <p style="margin:0;font-size:13.5px">serious-injury-or-worse crashes than a human benchmark, over 271.3 million rider-only miles (to June 2026, five US cities). Also 82% fewer injury crashes and 82% fewer airbag-deployment crashes.</p>
+        <h4 style="margin:12px 0 2px;font-size:13.5px">Strengths</h4>
+        <ul><li>Method and crash data are published, with 95% confidence intervals by city.</li><li>Rates are compared per mile, not as raw counts.</li></ul>
+        <h4 style="margin:10px 0 2px;font-size:13.5px">Limits for a regulator</h4>
+        <ul><li>The company runs the analysis and builds the human benchmark itself.</li><li>Miles driven are self-reported.</li><li>US city roads are not Swiss roads: trams, snow, mountain passes, different traffic rules.</li><li>Remote-assistance events are not part of the comparison.</li></ul>
+      </div>
+      <div class="panel claim">
+        <span class="chip real">Real · insurer data, co-authored</span>
+        <h3 style="margin-top:8px">Swiss Re and Waymo claims study (Dec 2024)</h3>
+        <div class="big">2 vs 26</div>
+        <p style="margin:0;font-size:13.5px">bodily-injury liability claims over 25.3 million driverless miles, against about 26 expected for human drivers over the same distance (92% fewer). Property damage: 9 claims vs 78 expected (88% fewer).</p>
+        <h4 style="margin:12px 0 2px;font-size:13.5px">Strengths</h4>
+        <ul><li>Uses a data source outside the company: insurance claims.</li><li>Large human baseline from the insurer's own portfolio.</li></ul>
+        <h4 style="margin:10px 0 2px;font-size:13.5px">Limits for a regulator</h4>
+        <ul><li>Published jointly with Waymo, so not fully independent.</li><li>Both injury claims were still open when it was published.</li><li>Claims measure liability, not every safety-relevant event.</li></ul>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h3>What operators disclose today</h3>
+      <p class="sub">Public disclosure facts from our sources, as of November 2026. "Not found" means we found no public source, not that nothing exists.</p>
+      <div class="tbl-wrap" style="border:0"><table id="discTable"></table></div>
+    </div>
+  </section>
+
+  <section class="block" id="proposal" aria-labelledby="h-pr">
+    <div class="sec-h"><h2 id="h-pr">Our proposal: from company claims to verified safety</h2><p>Switzerland is just starting driverless operations. Rules set now decide whether public trust rests on evidence.</p></div>
+
+    <div class="swiss">
+      <div class="panel"><div class="d">1 MARCH 2025</div><p>The Ordinance on Automated Driving enters into force. Driverless vehicles may run only in operating areas approved by a canton, supervised by an operator.</p></div>
+      <div class="panel"><div class="d">FEBRUARY 2026</div><p>According to FEDRO, as reported by Vischer, no vehicle yet holds type approval for any of the three permitted uses. Type approval relies on a foreign authority plus a FEDRO conformity check.</p></div>
+      <div class="panel"><div class="d">JUNE 2026</div><p>FEDRO grants AmiGo (PostBus with Baidu's Apollo Go) a special permit for Level 4 trials in about 80 km² of St. Gallen and both Appenzells. Safety drivers stay on board. Driverless passenger service is planned for 2027.</p></div>
+      <div class="panel"><div class="d">1 MARCH 2028</div><p>All cantons must have set responsibilities and named their approval authorities for driverless operating areas.</p></div>
+    </div>
+
+    <div class="tbl-wrap" style="margin-top:16px">
+      <table class="req" id="reqTable"></table>
+    </div>
+    <p class="src">Status describes what we found in public summaries of the ordinance and FEDRO guidance; "proposed addition" means we ask for it to be specified, not that it is necessarily absent.</p>
+
+    <h3 style="margin:22px 0 10px;font-size:18px;font-family:var(--font-display)">New dangers the register must capture</h3>
+    <div class="lens">
+      <div class="panel"><span class="chip">Deskilling</span><h3 style="margin-top:8px">Humans as backup monitors</h3><p>People asked to watch a system that is almost always right lose attention and skill. Remote supervisors watching many vehicles face the same trap.</p><p class="ex">Case: Uber, Tempe 2018</p></div>
+      <div class="panel"><span class="chip">Fleet dynamics</span><h3 style="margin-top:8px">One flaw, hundreds of cars</h3><p>Identical software fails in the same way at the same time. Register metric: vehicles stranded at once, per event.</p><p class="ex">Cases: Waymo SF blackout 2025, Cruise festival stall 2023</p></div>
+      <div class="panel"><span class="chip">Artificial crash causes</span><h3 style="margin-top:8px">Mistakes no human would make</h3><p>Behaviour like dragging a person while pulling over, or yielding to a school bus and then driving past it. These need their own categories.</p><p class="ex">Cases: Cruise 2023, Waymo school buses 2025</p></div>
+      <div class="panel"><span class="chip">Teleoperation</span><h3 style="margin-top:8px">Driving through a screen</h3><p>Remote operators see through cameras, with delay and a narrow view. The register logs who was in control, latency and video quality.</p><p class="ex">Case: Tesla Austin 2025–26</p></div>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <h3>A just culture for reporting</h3>
+      <p style="margin:6px 0 0;font-size:14px;color:var(--ink-2);max-width:90ch">Fines should target concealment and late reporting, as in the Cruise case, not honest reports. Remote supervisors and safety staff need a confidential channel and protection when they report problems. A punitive response to honest error reduces reporting, while a restorative approach asks who was hurt, what they need and what the system must change (Dekker and Breakey, 2016; Boskeljon-Horst et al., 2024). The register should publish learning, not blame.</p>
+    </div>
+  </section>
+</main>
+
+<footer id="sources">
+  <div class="wrap">
+    <div>
+      <h4>About this prototype</h4>
+      <p style="margin:0">Built by an ETH Zurich student group for the AI Safety course (GESS), topic 12, "Robotaxis: How Safe Is Safe Enough?". Not an official site. Operators, cantonal figures and incident reports in the register are simulated. Case files and evidence figures are real.</p>
+    </div>
+    <div>
+      <h4>Main sources</h4>
+      <ul id="srcList"></ul>
+    </div>
+    <div>
+      <h4>Course literature</h4>
+      <ul>
+        <li>Bienefeld, Day 1 and Day 2 slides, AI and Human Factors</li>
+        <li>Bradshaw et al. (2013), The Seven Deadly Myths of Autonomous Systems</li>
+        <li>Johnson et al. (2018), From Levels of Automation to Interdependencies</li>
+        <li>Dekker and Woods (2024), Wrong, Strong and Silent</li>
+        <li>Dekker and Breakey (2016), Just culture</li>
+        <li>Boskeljon-Horst et al. (2024), Restorative Just Culture</li>
+        <li>Hollnagel and Dekker (2025), The ironies of human factors</li>
+      </ul>
+    </div>
+  </div>
+</footer>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+  <div class="dlg">
+    <div class="dlg-h"><div><h2 id="dlgTitle"></h2><div class="meta" id="dlgMeta"></div></div><button class="x" id="dlgClose" type="button" aria-label="Close">×</button></div>
+    <div class="tabs" role="tablist" id="dlgTabs"></div>
+    <div class="tabp" id="dlgBody" role="tabpanel"></div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+"use strict";
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=n=>n.toLocaleString("de-CH");
+const fmt1=n=>n.toLocaleString("de-CH",{minimumFractionDigits:1,maximumFractionDigits:1});
+const fmt2=n=>n.toLocaleString("de-CH",{minimumFractionDigits:2,maximumFractionDigits:2});
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const rnd=mulberry32(20281106);
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const lrnd=Math.random;
+const lpick=a=>a[Math.floor(lrnd()*a.length)];
+function poisson(l,r){r=r||rnd; if(l>30){const u=r()||1e-9,v=r();return Math.max(0,Math.round(l+Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)*Math.sqrt(l)));} let L=Math.exp(-l),k=0,p=1; do{k++;p*=r();}while(p>L); return k-1;}
+function wpick(items,weights,r){r=r||rnd;const s=weights.reduce((a,b)=>a+b,0);let x=r()*s;for(let i=0;i<items.length;i++){x-=weights[i];if(x<=0)return items[i];}return items[items.length-1];}
+const cssv=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+/* ---------- exact Poisson CI ---------- */
+function lnGamma(z){const g=7,c=[0.99999999999980993,676.5203681218851,-1259.1392167224028,771.32342877765313,-176.61502916214059,12.507343278686905,-0.13857109526572012,9.9843695780195716e-6,1.5056327351493116e-7];if(z<0.5)return Math.log(Math.PI/Math.sin(Math.PI*z))-lnGamma(1-z);z-=1;let x=c[0];for(let i=1;i<g+2;i++)x+=c[i]/(z+i);const t=z+g+0.5;return 0.5*Math.log(2*Math.PI)+(z+0.5)*Math.log(t)-t+Math.log(x);}
+function gammaP(a,x){if(x<=0)return 0;if(x<a+1){let sum=1/a,del=sum,ap=a;for(let n=0;n<500;n++){ap++;del*=x/ap;sum+=del;if(Math.abs(del)<Math.abs(sum)*1e-12)break;}return sum*Math.exp(-x+a*Math.log(x)-lnGamma(a));}let b=x+1-a,c=1e300,d=1/b,h=d;for(let i=1;i<500;i++){const an=-i*(i-a);b+=2;d=an*d+b;if(Math.abs(d)<1e-300)d=1e-300;c=b+an/c;if(Math.abs(c)<1e-300)c=1e-300;d=1/d;const del=d*c;h*=del;if(Math.abs(del-1)<1e-12)break;}return 1-Math.exp(-x+a*Math.log(x)-lnGamma(a))*h;}
+function solveP(a,target){let lo=0,hi=Math.max(10,a*3+50);for(let i=0;i<200;i++){const m=(lo+hi)/2;if(gammaP(a,m)<target)lo=m;else hi=m;}return (lo+hi)/2;}
+function poissonCI(k,conf){const al=1-conf;const lower=k===0?0:solveP(k,al/2);const upper=solveP(k+1,1-al/2);return [lower,upper];}
+
+/* ---------- taxonomy ---------- */
+const TYPES=[
+ {k:"remote",label:"Remote intervention",c:"--s1",rate:80},
+ {k:"stranded",label:"Stranded / minimal-risk stop",c:"--s2",rate:22},
+ {k:"fault",label:"System or connectivity fault",c:"--s3",rate:12},
+ {k:"violation",label:"Traffic-law violation",c:"--s4",rate:7},
+ {k:"nearmiss",label:"Near-miss with road user",c:"--s5",rate:6},
+ {k:"pdo",label:"Collision, property damage",c:"--s6",rate:3.4},
+ {k:"passenger",label:"Passenger safety event",c:"--s7",rate:1.6},
+ {k:"injury",label:"Collision with injury",c:"--s8",rate:1.0}
+];
+const TY=Object.fromEntries(TYPES.map(t=>[t.k,t]));
+const STACK=["injury","passenger","pdo","nearmiss","violation","fault","stranded","remote"];
+const COLL=["injury","pdo"];
+const MONTHS=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov"];
+const MDAYS=[31,29,31,30,31,30,31,31,30,31,6];
+
+const OPS=[
+ {k:"alp",name:"AlpRide AG",svc:"Ride-hailing",fleet:160,cant:{ZH:.7,ZG:.15,LU:.15},access:"Full raw logs",delay:6,mult:{},claimBias:.08},
+ {k:"lem",name:"LémanGo SA",svc:"Ride-hailing",fleet:110,cant:{GE:.6,VD:.4},access:"Full raw logs",delay:9,mult:{remote:1.3,stranded:1.2},claimBias:.12},
+ {k:"rhe",name:"Rheinshuttle AG",svc:"Shuttle lines",fleet:50,cant:{BS:.55,BE:.45},access:"Summary only",delay:31,mult:{violation:1.6,pdo:1.3},claimBias:.35},
+ {k:"san",name:"Säntis Mobil AG",svc:"On-demand public transport",fleet:45,cant:{SG:.55,AR:.2,AI:.1,TG:.15},access:"Full raw logs",delay:4,mult:{remote:1.6,stranded:1.5,fault:1.4,injury:.6},claimBias:.05},
+ {k:"cer",name:"Ceresio Drive SA",svc:"Ride-hailing",fleet:35,cant:{TI:1},access:"Redacted narratives",delay:70,mult:{injury:1.5,pdo:1.5,remote:.45,violation:1.3},claimBias:.6}
+];
+const OP=Object.fromEntries(OPS.map(o=>[o.k,o]));
+const CANTONS={BS:[3,0,"Basel-Stadt"],SH:[5,0,"Schaffhausen"],JU:[2,1,"Jura"],BL:[3,1,"Basel-Landschaft"],AG:[4,1,"Aargau"],ZH:[5,1,"Zürich"],TG:[6,1,"Thurgau"],NE:[1,2,"Neuchâtel"],SO:[2,2,"Solothurn"],BE:[3,2,"Bern"],LU:[4,2,"Luzern"],ZG:[5,2,"Zug"],SG:[6,2,"St. Gallen"],AR:[7,2,"Appenzell A.Rh."],VD:[1,3,"Vaud"],FR:[2,3,"Fribourg"],OW:[3,3,"Obwalden"],NW:[4,3,"Nidwalden"],SZ:[5,3,"Schwyz"],GL:[6,3,"Glarus"],AI:[7,3,"Appenzell I.Rh."],GE:[0,4,"Genève"],VS:[2,4,"Valais"],UR:[4,4,"Uri"],GR:[6,4,"Graubünden"],TI:[5,5,"Ticino"]};
+const PLACES={ZH:["Zürich","Winterthur","Dübendorf","Uster","Oerlikon"],ZG:["Zug","Baar","Cham"],LU:["Luzern","Kriens","Emmen"],GE:["Genève","Carouge","Vernier","Lancy"],VD:["Lausanne","Renens","Nyon","Morges"],BS:["Basel","Riehen"],BE:["Bern","Köniz","Biel/Bienne","Ostermundigen"],SG:["St. Gallen","Gossau","Rorschach","Wil"],AR:["Herisau","Teufen","Speicher"],AI:["Appenzell","Gonten"],TG:["Arbon","Amriswil","Romanshorn"],TI:["Lugano","Mendrisio","Bellinzona","Chiasso"]};
+const STREETS=["roundabout","tram stop","pedestrian crossing","school zone","junction","bus lane","roadworks","station forecourt","underpass","hill section"];
+
+const TITLES={
+ remote:["Remote operator took direct control after vehicle stalled at {s}","Remote path instruction: delivery van blocking lane at {s}","Remote takeover: police officer directing traffic at {s}","Remote operator guided vehicle around {s} closure","Vehicle requested help at unmapped {s}, operator drove 40 m"],
+ stranded:["Vehicle stopped in travel lane at {s} for {m} min","Minimal-risk stop on tram tracks near {s} ({m} min)","Ambulance access blocked at {s}, vehicle moved remotely after {m} min","Vehicle froze at dark traffic signal at {s} ({m} min)","Passenger exit refused, vehicle halted at {s}"],
+ fault:["Loss of mobile connection near {s}, safe stop","Lidar blocked by snow, degraded mode at {s}","Map mismatch at {s}, vehicle stopped","Localisation error in tunnel approach, safe stop","Sensor calibration fault detected at {s}"],
+ violation:["Failed to give way at {s}","Entered junction on red at {s}","Passed tram with passengers alighting at {s}","Exceeded 30 km/h limit in {s}","Stopped inside yellow box at {s}"],
+ nearmiss:["Emergency braking for cyclist at {s}","Near-miss with pedestrian at {s}","Child stepped out between parked cars near {s}","Late reaction to e-scooter at {s}","Swerved around wrong-way cyclist at {s}"],
+ pdo:["Low-speed contact with parked car while pulling over at {s}","Rear-ended by human driver at {s}","Side-swipe with delivery van at {s}","Mirror contact with bus at {s}","Reversed into bollard at {s}"],
+ passenger:["Passenger fell during emergency braking near {s}","Door opened into cycle lane at {s}","Passenger could not reach support for {m} min","Passenger fell ill, vehicle stopped at {s}","Child seat warning ignored at {s}"],
+ injury:["Collision with cyclist at {s}","Pedestrian struck at {s}","Collision with turning car at {s}","E-scooter rider struck at {s}","Rear-end collision with motorcyclist at {s}"]
+};
+const MEASURES={
+ remote:["Area added to remote-assistance hotspot list; map update scheduled","Operator-to-vehicle ratio lowered in this area during peak hours"],
+ stranded:["Software update: faster fallback to pull-over instead of in-lane stop","Agreement with cantonal police on removal times for stranded vehicles"],
+ fault:["Antenna hardware retrofit across fleet","Sensor cleaning interval shortened for winter operations"],
+ violation:["Behaviour rule corrected and re-validated in simulation before fleet roll-out","Scenario added to independent test catalogue"],
+ nearmiss:["Prediction model retrained on occluded-cyclist scenarios","Speed cap lowered to 30 km/h in this zone"],
+ pdo:["Pull-over manoeuvre logic reviewed","Fleet-wide software patch after root-cause analysis"],
+ passenger:["Braking comfort limits revised","Support line staffing increased; response target 60 s"],
+ injury:["Fleet-wide software recall after root-cause analysis","Operations in affected zone suspended for 72 h for review"]
+};
+const SEV_ORDER={Fatal:0,"Serious injury":1,"Minor injury":2,"No injury":3};
+
+/* ---------- generate scenario ---------- */
+const recs=[];
+const kmTab={};
+OPS.forEach(o=>{kmTab[o.k]={};Object.keys(o.cant).forEach(c=>kmTab[o.k][c]=new Array(11).fill(0));});
+for(let m=0;m<11;m++){
+  const growth=0.72+0.035*m, part=MDAYS[m]/(m===10?30:MDAYS[m]);
+  OPS.forEach(o=>{
+    Object.entries(o.cant).forEach(([c,share])=>{
+      const km=o.fleet*share*5200*growth*part;
+      kmTab[o.k][c][m]=km;
+      TYPES.forEach(t=>{
+        const lam=t.rate*(o.mult[t.k]||1)*km/1e6;
+        const n=poisson(lam);
+        for(let i=0;i<n;i++)recs.push(makeRec(o,c,t.k,m,null,rnd));
+      });
+    });
+  });
+}
+function makeRec(o,c,type,m,dateOverride,r){
+  const pk=a=>a[Math.floor(r()*a.length)];
+  let d;
+  if(dateOverride)d=dateOverride;else{const day=1+Math.floor(r()*MDAYS[m]);d=new Date(2028,m,day,Math.floor(r()*24),Math.floor(r()*60));if(m===10&&day===6){const now=new Date();d.setHours(Math.min(d.getHours(),Math.max(0,now.getHours()-1)));}}
+  const place=pk(PLACES[c]), s=pk(STREETS), mins=2+Math.floor(r()*35);
+  const title=pk(TITLES[type]).replace("{s}",s).replace("{m}",mins);
+  let sev="No injury";
+  if(type==="injury"){const x=r();sev=x<.025?"Fatal":x<.24?"Serious injury":"Minor injury";}
+  if(type==="passenger"&&r()<.35)sev="Minor injury";
+  const isColl=type==="injury"||type==="pdo"||type==="nearmiss";
+  let det=null,claim=null;
+  if(isColl){
+    det=wpick(["Automated system","Remote operator","Other road user","Shared","Undetermined"],[30,5,49,11,5],r);
+    claim=det;
+    if((det==="Automated system"||det==="Remote operator"||det==="Shared")&&r()<o.claimBias)claim="Other road user";
+    if(type==="nearmiss"&&r()<.4){det="Automated system";claim=r()<o.claimBias?"Other road user":"Automated system";}
+  }else if(type==="violation"){det="Automated system";claim=r()<o.claimBias*0.5?"Disputed":"Automated system";}
+  else if(type==="remote"){det="n/a";claim="n/a";}
+  else{det=r()<.2?"Infrastructure / network":"Automated system";claim=det;}
+  const ageDays=(new Date(2028,10,6)-d)/864e5;
+  let ver;
+  if(type==="injury")ver=o.access==="Redacted narratives"&&r()<.5?"Cross-checked":"Independently investigated";
+  else if(type==="pdo"||type==="nearmiss")ver=o.access==="Full raw logs"?(r()<.75?"Cross-checked":"Independently investigated"):(r()<.5?"Cross-checked":"Operator report only");
+  else ver=o.access==="Full raw logs"&&r()<.35?"Cross-checked":"Operator report only";
+  let status="Closed";
+  if(isColl&&ageDays<28){status="Under investigation";if(ver==="Independently investigated")det=null;}
+  const delay=Math.max(1,Math.round(o.delay*(0.4+r()*1.4)));
+  let action="None";
+  if(sev==="Fatal")action="Operating area suspended pending investigation";
+  else if(sev==="Serious injury")action="Formal investigation opened; speed limit imposed in zone";
+  else if(delay>48&&isColl)action="Fine CHF 20,000 for late reporting";
+  else if(claim&&det&&claim!==det&&isColl&&ver!=="Operator report only")action="Formal warning: incomplete or inaccurate operator report";
+  return {op:o.k,c,place,street:s,type,d,title,sev,det,claim,ver,status,delay,action,mins,teleLat:60+Math.floor(r()*420),teleTake:3+Math.floor(r()*40),ratio:6+Math.floor(r()*14),injured:type==="injury"?(sev==="Fatal"?1:1+(r()<.2?1:0)):(sev==="Minor injury"?1:0),measure:pk(MEASURES[type])};
+}
+{const nowS=scenNow();recs.forEach(r=>{const hrs=Math.floor((nowS-r.d)/3600e3);if(r.delay>hrs){r.delay=Math.max(0,hrs);if(r.delay<1)r.status=["injury","pdo","nearmiss"].includes(r.type)?"Under investigation":"Open";}});}
+recs.sort((a,b)=>a.d-b.d);
+recs.forEach((r,i)=>r.id="AVR-28-"+String(i+1).padStart(5,"0"));
+recs.reverse();
+let seq=recs.length, liveAdded=0;
+
+const kmTotal=()=>{let t=0;for(const o in kmTab)for(const c in kmTab[o])t+=kmTab[o][c].reduce((a,b)=>a+b,0);return t;};
+const kmOp=k=>Object.values(kmTab[k]).reduce((s,a)=>s+a.reduce((x,y)=>x+y,0),0);
+const kmCanton=c=>{let t=0;for(const o in kmTab)if(kmTab[o][c])t+=kmTab[o][c].reduce((a,b)=>a+b,0);return t;};
+const fleetTotal=OPS.reduce((s,o)=>s+o.fleet,0);
+
+/* ---------- KPIs ---------- */
+function renderKPIs(flashKey){
+  const cnt=k=>recs.filter(r=>r.type===k).length;
+  const inj=recs.filter(r=>r.type==="injury");
+  const ser=inj.filter(r=>r.sev!=="Minor injury").length;
+  const rem=cnt("remote"), km=kmTotal();
+  const blocked=recs.filter(r=>r.type==="stranded"&&/Ambulance/.test(r.title)).length;
+  const coll=recs.filter(r=>COLL.includes(r.type));
+  const verified=coll.filter(r=>r.ver!=="Operator report only").length;
+  const tiles=[
+    {k:"all",cls:"",lab:"Reported events, year to date",val:fmt(recs.length),foot:liveAdded?'<span class="delta">+'+liveAdded+'</span> since you opened this page':"All 8 event types"},
+    {k:"injury",cls:"k-red",lab:"Collisions with injury",val:fmt(inj.length),foot:ser+" serious or fatal"},
+    {k:"remote",cls:"k-blue",lab:"Remote interventions",val:fmt(rem),foot:"1 per "+fmt(Math.round(km/Math.max(rem,1)))+" km driven"},
+    {k:"stranded",cls:"k-org",lab:"Stranded vehicles",val:fmt(cnt("stranded")),foot:blocked+" blocked emergency access"},
+    {k:"ver",cls:"k-grn",lab:"Collisions verified independently",val:Math.round(verified/Math.max(coll.length,1)*100)+"%",foot:"Cross-checked or investigated"},
+    {k:"km",cls:"",lab:"Driverless distance, year to date",val:fmt1(km/1e6)+" M km",foot:fleetTotal+" vehicles, 5 operators"}
+  ];
+  $("#kpis").innerHTML=tiles.map(t=>`<div class="kpi ${t.cls}${flashKey&&(t.k===flashKey||t.k==="all")?" flash":""}"><div class="lab">${t.lab}</div><div class="val num">${t.val}</div><div class="foot">${t.foot}</div></div>`).join("");
+}
+
+/* ---------- legend ---------- */
+$("#typeLegend").innerHTML=TYPES.map(t=>`<span><span class="sw" style="background:var(${t.c})"></span>${t.label}</span>`).join("");
+
+/* ---------- tooltip helper ---------- */
+function tipFor(container){let t=container.querySelector(".tip");if(!t){t=document.createElement("div");t.className="tip";container.appendChild(t);}return t;}
+function placeTip(tip,container,x,y){tip.style.display="block";const cw=container.clientWidth,tw=tip.offsetWidth;let left=x+14;if(left+tw>cw)left=Math.max(0,x-tw-14);tip.style.left=left+"px";tip.style.top=Math.max(0,y-10)+"px";}
+
+/* ---------- monthly stacked chart ---------- */
+let chartMode="all";
+function monthData(){const rows=MONTHS.map(()=>Object.fromEntries(TYPES.map(t=>[t.k,0])));recs.forEach(r=>{if(r.d.getFullYear()===2028)rows[r.d.getMonth()][r.type]++;});return rows;}
+function renderMonthChart(){
+  const el=$("#monthChart");const data=monthData();
+  if(chartMode==="tbl"){
+    el.innerHTML=`<div class="tbl-wrap"><table><thead><tr><th>Month</th>${STACK.slice().reverse().map(k=>`<th class="r">${TY[k].label}</th>`).join("")}<th class="r">Total</th></tr></thead><tbody>${data.map((r,i)=>`<tr><td>${MONTHS[i]}${i===10?" (to 6th)":""}</td>${STACK.slice().reverse().map(k=>`<td class="r num">${r[k]}</td>`).join("")}<td class="r num"><b>${STACK.reduce((s,k)=>s+r[k],0)}</b></td></tr>`).join("")}</tbody></table></div>`;return;}
+  const keys=chartMode==="col"?["injury","pdo"]:STACK;
+  const W=Math.max(320,el.clientWidth||640),H=300,ml=44,mr=8,mt=10,mb=28;
+  const tot=data.map(r=>keys.reduce((s,k)=>s+r[k],0));
+  const max=Math.max(...tot)*1.08;const step=niceStep(max/5);const ymax=Math.ceil(max/step)*step;
+  const iw=W-ml-mr,ih=H-mt-mb,bw=iw/11,barW=Math.min(42,bw*0.62);
+  const y=v=>mt+ih-v/ymax*ih;
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Stacked bar chart of events per month by type">`;
+  for(let v=0;v<=ymax;v+=step){s+=`<line x1="${ml}" x2="${W-mr}" y1="${y(v)}" y2="${y(v)}" stroke="var(--grid)"/><text x="${ml-6}" y="${y(v)+4}" text-anchor="end">${fmt(v)}</text>`;}
+  data.forEach((r,i)=>{
+    const x=ml+bw*i+(bw-barW)/2;let acc=0;
+    const top=keys.filter(k=>r[k]>0).slice(-1)[0];
+    keys.forEach(k=>{const v=r[k];if(!v)return;const y0=y(acc),y1=y(acc+v);acc+=v;const h=Math.max(0,y0-y1-(k===top?0:2));
+      if(k===top&&h>4){s+=`<path d="M${x},${y0} V${y1+4} Q${x},${y1} ${x+4},${y1} H${x+barW-4} Q${x+barW},${y1} ${x+barW},${y1+4} V${y0} Z" fill="var(${TY[k].c})"/>`;}
+      else s+=`<rect x="${x}" y="${y1}" width="${barW}" height="${h}" fill="var(${TY[k].c})"/>`;});
+    s+=`<text x="${x+barW/2}" y="${H-10}" text-anchor="middle">${MONTHS[i]}</text>`;
+    s+=`<rect class="hit" data-i="${i}" x="${ml+bw*i}" y="${mt}" width="${bw}" height="${ih}" fill="transparent"/>`;
+  });
+  s+=`<line x1="${ml}" x2="${W-mr}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>`;
+  const lx=ml+bw*10+bw/2;s+=`<text x="${lx}" y="${y(tot[10])-6}" text-anchor="middle">to 6th</text>`;
+  s+="</svg>";el.innerHTML=s;
+  const tip=tipFor(el);
+  el.querySelectorAll(".hit").forEach(h=>{h.addEventListener("mousemove",e=>{const i=+h.dataset.i;const r=data[i];const box=el.getBoundingClientRect();
+    tip.innerHTML=`<div class="tt">${MONTHS[i]} 2028${i===10?" (to 6 Nov)":""}</div>`+keys.slice().reverse().map(k=>`<div class="row"><span><span class="sw" style="background:var(${TY[k].c})"></span>${TY[k].label}</span><b class="num">${r[k]}</b></div>`).join("")+`<div class="row" style="border-top:1px solid var(--line);margin-top:4px;padding-top:4px"><span>Total</span><b class="num">${tot[i]}</b></div>`;
+    placeTip(tip,el,e.clientX-box.left,e.clientY-box.top);});h.addEventListener("mouseleave",()=>tip.style.display="none");});
+}
+function niceStep(x){const p=Math.pow(10,Math.floor(Math.log10(x)));const f=x/p;return (f<1.5?1:f<3?2:f<7?5:10)*p;}
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener("click",()=>{chartMode=b.dataset.mode;document.querySelectorAll('[data-mode]').forEach(x=>x.setAttribute("aria-pressed",x===b));renderMonthChart();}));
+
+/* ---------- feed ---------- */
+function renderFeed(newId){
+  $("#feed").innerHTML=recs.slice(0,14).map(r=>`<li class="${r.id===newId?"new":""}"><button type="button" data-id="${r.id}"><span class="bar" style="background:var(${TY[r.type].c})"></span><span><span class="ti">${esc(r.title)}</span><br><span class="me">${TY[r.type].label} · ${esc(r.place)} (${r.c}) · ${OP[r.op].name}</span></span><span class="tm num">${timeAgo(r.d)}</span></button></li>`).join("");
+}
+function timeAgo(d){const now=scenNow();const s=Math.max(0,(now-d)/1000);if(s<60)return "just now";if(s<3600)return Math.floor(s/60)+" min ago";if(s<86400)return Math.floor(s/3600)+" h ago";return d.getDate()+"."+(d.getMonth()+1)+".";}
+function scenNow(){const n=new Date();return new Date(2028,10,6,n.getHours(),n.getMinutes(),n.getSeconds());}
+$("#feed").addEventListener("click",e=>{const b=e.target.closest("button[data-id]");if(b)openRec(b.dataset.id);});
+
+/* ---------- pyramid ---------- */
+function renderPyramid(){
+  const c=f=>recs.filter(f).length;
+  const rows=[
+    ["Fatal",c(r=>r.sev==="Fatal"&&r.type==="injury"),"--q7"],
+    ["Serious injury",c(r=>r.sev==="Serious injury"),"--q6"],
+    ["Minor injury",c(r=>r.sev==="Minor injury"),"--q5"],
+    ["Property damage",c(r=>r.type==="pdo"),"--q4"],
+    ["Near-miss and violation",c(r=>r.type==="nearmiss"||r.type==="violation"),"--q3"],
+    ["Stranded, faults",c(r=>r.type==="stranded"||r.type==="fault"),"--q3"],
+    ["Remote intervention",c(r=>r.type==="remote"),"--q2"]
+  ];
+  const mx=Math.log10(Math.max(...rows.map(r=>r[1]))+1);
+  let h="";rows.forEach((r,i)=>{const w=r[1]?Math.max(2,Math.log10(r[1]+1)/mx*100):0;
+    h+=`<div class="pyr-row"><span class="nm">${r[0]}</span><span class="tr"><span class="b" style="width:${w}%;background:var(${r[2]})" title="${r[0]}: ${r[1]}"></span></span><span class="ct num">${fmt(r[1])}</span></div>`;
+    if(i===3)h+=`<div class="pyr-split"><span>Typical crash statistics stop here</span></div>`;});
+  $("#pyramid").innerHTML=h;
+}
+
+/* ---------- map ---------- */
+let mapMetric="rate",selCanton="ZH";
+function cantonStats(c){const rs=recs.filter(r=>r.c===c);const km=kmCanton(c);return {n:rs.length,km,rate:km?rs.length/(km/1e6):0,inj:rs.filter(r=>r.type==="injury").length,rs};}
+function renderMap(){
+  const el=$("#map");const W=Math.max(300,el.clientWidth||520);const cols=8,rows=6;const g=4;const size=Math.min(64,(W-g*(cols-1))/cols);const H=rows*(size+g);
+  const active=Object.keys(PLACES);
+  const vals=active.map(c=>{const s=cantonStats(c);return mapMetric==="rate"?s.rate:mapMetric==="count"?s.n:s.inj;});
+  const lo=Math.min(...vals),hi=Math.max(...vals);
+  const ramp=["--q2","--q3","--q4","--q5","--q6","--q7"];
+  let s=`<svg viewBox="0 0 ${cols*(size+g)} ${H}" width="100%" role="img" aria-label="Tile map of Swiss cantons">`;
+  Object.entries(CANTONS).forEach(([code,[cx,cy,name]])=>{
+    const x=cx*(size+g),y=cy*(size+g);const on=active.includes(code);
+    let fill="var(--line-2)",txt="var(--muted)",vl="";
+    if(on){const v=vals[active.indexOf(code)];const t=hi>lo?(v-lo)/(hi-lo):.5;const idx=Math.min(ramp.length-1,Math.floor(t*ramp.length));fill=`var(${ramp[idx]})`;txt=idx>=2?"#fff":"#0b0b0b";vl=mapMetric==="rate"?fmt1(v):fmt(v);}
+    s+=`<g class="tile${code===selCanton?" sel":""}" data-c="${code}" tabindex="0" role="button" aria-label="${name}${on?": "+vl:", no operating area"}"><rect x="${x}" y="${y}" width="${size}" height="${size}" rx="4" fill="${fill}"/><text class="cd" x="${x+size/2}" y="${y+size/2+(on?-2:4)}" text-anchor="middle" style="fill:${txt}">${code}</text>${on?`<text class="vl num" x="${x+size/2}" y="${y+size/2+13}" text-anchor="middle" style="fill:${txt}">${vl}</text>`:""}</g>`;
+  });
+  s+="</svg>";el.innerHTML=s;
+  $("#rampLo").textContent=mapMetric==="rate"?fmt1(lo):fmt(lo);$("#rampHi").textContent=mapMetric==="rate"?fmt1(hi):fmt(hi);
+  $("#mapSub").textContent=mapMetric==="rate"?"Reported events per million km driven":mapMetric==="count"?"Reported events, year to date":"Collisions with injury, year to date";
+  el.querySelectorAll(".tile").forEach(t=>{const f=()=>{selCanton=t.dataset.c;renderMap();renderCanton();};t.addEventListener("click",f);t.addEventListener("keydown",e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();f();}});});
+}
+function renderCanton(){
+  const c=selCanton,name=CANTONS[c][2];const el=$("#cantonDetail");
+  if(!PLACES[c]){el.innerHTML=`<h3>${name} (${c})</h3><p class="sub">No approved operating area for driverless vehicles in this scenario.</p><p style="font-size:14px;color:var(--ink-2)">Under the Ordinance on Automated Driving, each canton decides whether to approve operating areas. Cantons must have named their approval authority by 1 March 2028.</p>`;return;}
+  const s=cantonStats(c);const ops=OPS.filter(o=>o.cant[c]);
+  const byT=TYPES.map(t=>[t,s.rs.filter(r=>r.type===t.k).length]);const mx=Math.max(...byT.map(x=>x[1]),1);
+  el.innerHTML=`<h3>${name} (${c})</h3><p class="sub">Operators: ${ops.map(o=>o.name).join(", ")}</p>
+  <dl><dt>Driverless km, YTD</dt><dd class="num">${fmt1(s.km/1e6)} M km</dd><dt>Reported events</dt><dd class="num">${fmt(s.n)}</dd><dt>Events per M km</dt><dd class="num">${fmt1(s.rate)}</dd><dt>Collisions with injury</dt><dd class="num">${s.inj}</dd><dt>Places</dt><dd>${PLACES[c].join(", ")}</dd></dl>
+  <div class="mini-bars">${byT.map(([t,n])=>`<div class="r"><span style="display:inline-flex;gap:6px;align-items:center"><span class="sw" style="background:var(${t.c})"></span>${t.label}</span><span class="tr"><span class="f" style="display:block;width:${n/mx*100}%;background:var(${t.c})"></span></span><span class="num" style="text-align:right">${n}</span></div>`).join("")}</div>
+  <p style="margin:12px 0 0"><button class="btn" type="button" id="cantonToReg">Show these events in the register</button></p>`;
+  $("#cantonToReg").addEventListener("click",()=>{resetFilters();$("#fCanton").value=c;page=0;renderReg();location.hash="register";});
+}
+document.querySelectorAll('[data-m]').forEach(b=>b.addEventListener("click",()=>{mapMetric=b.dataset.m;document.querySelectorAll('[data-m]').forEach(x=>x.setAttribute("aria-pressed",x===b));renderMap();}));
+
+/* ---------- operators ---------- */
+const BENCH=2.0;
+function opStats(o){const rs=recs.filter(r=>r.op===o.k);const km=kmOp(o.k);const coll=rs.filter(r=>COLL.includes(r.type)).length;const ci=poissonCI(coll,.95).map(v=>v/(km/1e6));const rem=rs.filter(r=>r.type==="remote").length;const inv=rs.filter(r=>COLL.includes(r.type)&&r.det&&r.claim);const disc=inv.filter(r=>r.claim!==r.det).length;const delays=rs.filter(r=>r.type!=="remote").map(r=>r.delay).sort((a,b)=>a-b);return {rs,km,coll,rate:coll/(km/1e6),ci,rem,disc,inv:inv.length,med:delays[Math.floor(delays.length/2)]||0};}
+function renderOps(){
+  const st=OPS.map(o=>[o,opStats(o)]);const xmax=Math.max(...st.map(x=>x[1].ci[1]),BENCH)*1.1;
+  const W=170,H=26,sx=v=>4+v/xmax*(W-8);
+  const accessPill=a=>a==="Full raw logs"?'<span class="pill good">Full raw logs</span>':a==="Summary only"?'<span class="pill caution">Summary only</span>':'<span class="pill bad">Redacted narratives</span>';
+  const delayPill=h=>h<=12?`<span class="pill good">${h} h</span>`:h<=36?`<span class="pill caution">${h} h</span>`:`<span class="pill bad">${h} h</span>`;
+  $("#opTable").innerHTML=`<thead><tr><th>Operator</th><th>Service</th><th>Cantons</th><th class="r">Fleet</th><th class="r">M km YTD</th><th class="r">Events</th><th class="r">Collisions</th><th>Collision rate per M km (95% CI)</th><th class="r">Remote interv. per 10,000 km</th><th>Median reporting delay</th><th>Data access for authorities</th><th class="r">Reports contradicted</th></tr></thead><tbody>${
+    st.map(([o,s])=>`<tr><td style="white-space:nowrap"><b>${o.name}</b></td><td style="min-width:110px">${o.svc}</td><td>${Object.keys(o.cant).join(", ")}</td><td class="r num">${o.fleet}</td><td class="r num">${fmt1(s.km/1e6)}</td><td class="r num">${fmt(s.rs.length)}</td><td class="r num">${s.coll}</td>
+    <td><div style="display:flex;align-items:center;gap:8px"><svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" aria-label="Rate ${fmt2(s.rate)}, interval ${fmt2(s.ci[0])} to ${fmt2(s.ci[1])}"><line x1="${sx(BENCH)}" x2="${sx(BENCH)}" y1="2" y2="${H-2}" stroke="var(--bad)" stroke-dasharray="3 3"/><line x1="${sx(s.ci[0])}" x2="${sx(s.ci[1])}" y1="${H/2}" y2="${H/2}" stroke="var(--s1)" stroke-width="2"/><line x1="${sx(s.ci[0])}" x2="${sx(s.ci[0])}" y1="${H/2-5}" y2="${H/2+5}" stroke="var(--s1)" stroke-width="2"/><line x1="${sx(s.ci[1])}" x2="${sx(s.ci[1])}" y1="${H/2-5}" y2="${H/2+5}" stroke="var(--s1)" stroke-width="2"/><circle cx="${sx(s.rate)}" cy="${H/2}" r="4.5" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/></svg><span class="num" style="font-size:12.5px;white-space:nowrap">${fmt2(s.rate)} <span style="color:var(--muted)">(${fmt2(s.ci[0])}–${fmt2(s.ci[1])})</span></span></div></td>
+    <td class="r num">${fmt1(s.rem/(s.km/1e4))}${o.k==="cer"?' <span class="pill caution" title="Far below peers; possible under-reporting">check</span>':""}</td><td>${delayPill(s.med)}</td><td>${accessPill(o.access)}</td><td class="r num">${s.disc} of ${s.inv}</td></tr>`).join("")}</tbody>`;
+  // fault chart
+  const fc=$("#faultChart");const FW=Math.max(300,fc.clientWidth||460),rowH=46,FH=st.length*rowH+24,ml=120,mr=44;
+  const AV=x=>x==="Automated system"||x==="Remote operator"||x==="Shared";
+  const sx2=v=>ml+v*(FW-ml-mr);
+  let s=`<svg viewBox="0 0 ${FW} ${FH}" width="100%" role="img" aria-label="Operator-claimed versus investigated fault share">`;
+  [0,.25,.5,.75,1].forEach(v=>{s+=`<line x1="${sx2(v)}" x2="${sx2(v)}" y1="0" y2="${FH-20}" stroke="var(--grid)"/><text x="${sx2(v)}" y="${FH-6}" text-anchor="middle">${v*100}%</text>`;});
+  st.forEach(([o,ss],i)=>{const inv=ss.rs.filter(r=>COLL.includes(r.type)&&r.det&&r.claim&&r.det!=="Undetermined");const cl=inv.filter(r=>AV(r.claim)).length/Math.max(inv.length,1);const dt=inv.filter(r=>AV(r.det)).length/Math.max(inv.length,1);const y0=i*rowH+6;
+    s+=`<text x="${ml-8}" y="${y0+17}" text-anchor="end" style="fill:var(--ink);font-size:12px">${o.name}</text>`;
+    s+=`<rect x="${ml}" y="${y0}" width="${Math.max(2,sx2(cl)-ml)}" height="14" rx="2" fill="var(--muted)"/><text x="${sx2(cl)+5}" y="${y0+11}" class="num">${Math.round(cl*100)}%</text>`;
+    s+=`<rect x="${ml}" y="${y0+17}" width="${Math.max(2,sx2(dt)-ml)}" height="14" rx="2" fill="var(--s1)"/><text x="${sx2(dt)+5}" y="${y0+28}" class="num" style="fill:var(--ink)">${Math.round(dt*100)}%</text>`;});
+  s+="</svg>";fc.innerHTML=s;
+  // fault mix
+  const all=recs.filter(r=>(COLL.includes(r.type)||r.type==="nearmiss")&&r.det);const cats=["Automated system","Remote operator","Shared","Other road user","Undetermined"];const mx=Math.max(...cats.map(c=>all.filter(r=>r.det===c).length),1);
+  const pend=recs.filter(r=>(COLL.includes(r.type)||r.type==="nearmiss")&&!r.det).length;
+  $("#faultMix").innerHTML=`<div class="mini-bars">${cats.map(c=>{const n=all.filter(r=>r.det===c).length;return `<div class="r"><span>${c}</span><span class="tr"><span class="f" style="display:block;width:${n/mx*100}%;background:var(--q5)"></span></span><span class="num" style="text-align:right">${n}</span></div>`;}).join("")}<div class="r"><span>Still under investigation</span><span class="tr"><span class="f" style="display:block;width:${pend/mx*100}%;background:var(--q2)"></span></span><span class="num" style="text-align:right">${pend}</span></div></div>`;
+}
+
+/* ---------- register ---------- */
+let page=0;const PER=20;
+function fillSelect(id,opts,all){$(id).innerHTML=`<option value="">${all}</option>`+opts.map(o=>`<option value="${esc(o[0])}">${esc(o[1])}</option>`).join("");}
+fillSelect("#fType",TYPES.map(t=>[t.k,t.label]),"All types");
+fillSelect("#fCanton",Object.keys(PLACES).map(c=>[c,CANTONS[c][2]]),"All cantons");
+fillSelect("#fOp",OPS.map(o=>[o.k,o.name]),"All operators");
+fillSelect("#fSev",["Fatal","Serious injury","Minor injury","No injury"].map(s=>[s,s]),"All severities");
+fillSelect("#fVer",["Independently investigated","Cross-checked","Operator report only"].map(s=>[s,s]),"All");
+function filtered(){const t=$("#fType").value,c=$("#fCanton").value,o=$("#fOp").value,s=$("#fSev").value,v=$("#fVer").value,q=$("#fText").value.trim().toLowerCase(),d=$("#fDisc").checked;
+  return recs.filter(r=>(!t||r.type===t)&&(!c||r.c===c)&&(!o||r.op===o)&&(!s||r.sev===s)&&(!v||r.ver===v)&&(!d||(r.det&&r.claim&&r.det!==r.claim&&r.det!=="n/a"))&&(!q||(r.title+" "+r.place+" "+r.id+" "+OP[r.op].name+" "+TY[r.type].label).toLowerCase().includes(q)));}
+const fd=d=>String(d.getDate()).padStart(2,"0")+"."+String(d.getMonth()+1).padStart(2,"0")+".2028 "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+const sevPill=s=>s==="Fatal"||s==="Serious injury"?`<span class="pill bad">${s}</span>`:s==="Minor injury"?`<span class="pill caution">${s}</span>`:`<span class="pill neutral">${s}</span>`;
+const verPill=v=>v==="Independently investigated"?`<span class="pill good">Investigated</span>`:v==="Cross-checked"?`<span class="pill caution">Cross-checked</span>`:`<span class="pill bad">Operator only</span>`;
+function renderReg(){
+  const rs=filtered();const pages=Math.max(1,Math.ceil(rs.length/PER));page=Math.min(page,pages-1);
+  const sl=rs.slice(page*PER,page*PER+PER);
+  $("#regTable").innerHTML=`<thead><tr><th>ID</th><th>Date, time</th><th>Event</th><th>Type</th><th>Place</th><th>Operator</th><th>Severity</th><th>Fault (investigation)</th><th>Verification</th><th>Status</th></tr></thead><tbody>${
+    sl.map(r=>{const disc=r.det&&r.claim&&r.det!==r.claim&&r.det!=="n/a";return `<tr class="click" data-id="${r.id}" tabindex="0"><td class="num" style="white-space:nowrap">${r.id}</td><td class="num" style="white-space:nowrap">${fd(r.d)}</td><td style="min-width:240px">${esc(r.title)}</td><td style="white-space:nowrap"><span style="display:inline-flex;gap:6px;align-items:center"><span class="sw" style="background:var(${TY[r.type].c})"></span>${TY[r.type].label}</span></td><td>${esc(r.place)} (${r.c})</td><td>${OP[r.op].name}</td><td>${sevPill(r.sev)}</td><td>${r.det===null?'<span style="color:var(--muted)">Pending</span>':esc(r.det)}${disc?' <span class="pill bad" title="Operator claimed: '+esc(r.claim)+'">disputed</span>':""}</td><td>${verPill(r.ver)}</td><td>${r.status}</td></tr>`;}).join("")||'<tr><td colspan="10">No events match these filters.</td></tr>'}</tbody>`;
+  $("#regCount").textContent=fmt(rs.length)+" events match";$("#pageInfo").textContent="Page "+(page+1)+" of "+pages;
+  $("#prev").disabled=page===0;$("#next").disabled=page>=pages-1;
+}
+["#fType","#fCanton","#fOp","#fSev","#fVer","#fDisc"].forEach(id=>$(id).addEventListener("change",()=>{page=0;renderReg();}));
+$("#fText").addEventListener("input",()=>{page=0;renderReg();});
+function resetFilters(){["#fType","#fCanton","#fOp","#fSev","#fVer"].forEach(id=>$(id).value="");$("#fText").value="";$("#fDisc").checked=false;}
+$("#fReset").addEventListener("click",()=>{resetFilters();page=0;renderReg();});
+$("#prev").addEventListener("click",()=>{page--;renderReg();});$("#next").addEventListener("click",()=>{page++;renderReg();});
+$("#regTable").addEventListener("click",e=>{const tr=e.target.closest("tr[data-id]");if(tr)openRec(tr.dataset.id);});
+$("#regTable").addEventListener("keydown",e=>{if(e.key==="Enter"){const tr=e.target.closest("tr[data-id]");if(tr)openRec(tr.dataset.id);}});
+$("#searchForm").addEventListener("submit",e=>{e.preventDefault();resetFilters();$("#fText").value=$("#q").value;page=0;renderReg();location.hash="register";});
+$("#copyCsv").addEventListener("click",async()=>{const rs=filtered();const rows=[["id","datetime","type","canton","place","operator","severity","fault_investigation","fault_operator_claim","verification","status","reporting_delay_h","regulator_action"]].concat(rs.map(r=>[r.id,fd(r.d),TY[r.type].label,r.c,r.place,OP[r.op].name,r.sev,r.det===null?"pending":r.det,r.claim,r.ver,r.status,r.delay,r.action]));const csv=rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(",")).join("\n");try{await navigator.clipboard.writeText(csv);toast("Copied "+fmt(rs.length)+" rows as CSV");}catch(err){toast("Copying is blocked in this view");}});
+
+/* ---------- modal ---------- */
+let lastFocus=null;
+function openModal(title,metaHtml,tabs){
+  lastFocus=document.activeElement;$("#dlgTitle").textContent=title;$("#dlgMeta").innerHTML=metaHtml;
+  $("#dlgTabs").innerHTML=tabs.map((t,i)=>`<button type="button" role="tab" aria-selected="${i===0}" data-i="${i}">${t[0]}</button>`).join("");
+  const show=i=>{$("#dlgBody").innerHTML=tabs[i][1];$("#dlgTabs").querySelectorAll("button").forEach(b=>b.setAttribute("aria-selected",+b.dataset.i===i));};
+  $("#dlgTabs").onclick=e=>{const b=e.target.closest("button");if(b)show(+b.dataset.i);};
+  show(0);$("#modal").classList.add("open");document.body.style.overflow="hidden";$("#dlgClose").focus();
+}
+function closeModal(){$("#modal").classList.remove("open");document.body.style.overflow="";if(lastFocus)lastFocus.focus();}
+$("#dlgClose").addEventListener("click",closeModal);
+$("#modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal();});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"&&$("#modal").classList.contains("open"))closeModal();});
+
+function openRec(id){
+  const r=recs.find(x=>x.id===id);if(!r)return;const o=OP[r.op];const t=TY[r.type];
+  const isColl=["injury","pdo","nearmiss"].includes(r.type);const disc=r.det&&r.claim&&r.det!==r.claim&&r.det!=="n/a";
+  const repT=new Date(r.d.getTime()+r.delay*3600e3);
+  const sim='<span class="chip sim">Simulated record</span>';
+  const overview=`<dl class="kv"><dt>Event type</dt><dd><span style="display:inline-flex;gap:6px;align-items:center"><span class="sw" style="background:var(${t.c})"></span>${t.label}</span></dd><dt>When</dt><dd class="num">${fd(r.d)}</dd><dt>Where</dt><dd>${esc(r.place)}, canton of ${CANTONS[r.c][2]} (${esc(r.street)})</dd><dt>Operator</dt><dd>${o.name} (${o.svc})</dd><dt>Severity</dt><dd>${sevPill(r.sev)} ${r.injured?r.injured+" person(s) injured":""}</dd><dt>Fault, operator's report</dt><dd>${esc(r.claim||"–")}</dd><dt>Fault, investigation</dt><dd>${r.det===null?"Pending":esc(r.det)}</dd><dt>Verification</dt><dd>${verPill(r.ver)}</dd><dt>Reported to authority</dt><dd class="num">${r.delay} h after the event ${r.delay>24?'<span class="pill bad">over 24 h limit</span>':'<span class="pill good">within 24 h</span>'}</dd><dt>Status</dt><dd>${r.status}</dd></dl>${disc?`<div class="flag"><b>Accounts differ.</b> The operator attributed this event to "${esc(r.claim)}". The independent investigation found "${esc(r.det)}".</div>`:""}
+  <h4>Timeline</h4><ul><li class="num">${fd(r.d)}: event occurs</li>${["remote","stranded"].includes(r.type)?`<li class="num">+${r.teleTake} s: remote operator connected</li>`:""}${isColl?`<li>Police notified by ${r.type==="injury"?"emergency call (144/117)":"operator control centre"}</li>`:""}<li class="num">${fd(repT)}: operator report filed</li>${r.ver!=="Operator report only"?`<li>Data cross-checked against ${isColl?(r.ver==="Independently investigated"?"raw vehicle logs, police report and insurer claim":"police report and insurer claim"):"raw vehicle and remote-operation logs"}</li>`:""}<li>${r.status}</li></ul>`;
+  const police=isColl||r.type==="passenger"&&r.sev!=="No injury"?`<div class="doc"><div class="dh"><span>Cantonal police report (simulated)</span><span>Ref. ${r.c}-${r.id.slice(-5)}</span></div><p>Patrol attended at ${esc(r.place)} about ${8+Math.floor(r.teleTake/3)} minutes after the call. ${r.type==="injury"?`${r.injured} person(s) taken to hospital (${r.sev.toLowerCase()}).`:"No injuries reported."} The driverless vehicle was found ${r.type==="pdo"?"stationary at the point of contact":"pulled over at the roadside"} with hazard lights on. No person was on board to give a driver statement; the operator's control centre was contacted by phone.</p><p>${r.det==="Other road user"?"Witness statements and road markings indicate the other road user did not give way.":r.det==="Automated system"?"Witnesses state the vehicle moved off or continued without giving way.":"Sequence of events could not be established on site."} Vehicle data recorder: ${o.access==="Full raw logs"?"secured, copy handed to investigators within 24 h.":o.access==="Summary only"?"operator supplied an event summary only; raw data requested.":"operator declined to release narrative data, citing business confidentiality."}</p></div>`:`<p>No police attendance. ${t.label}s are reported directly by the operator through the mandatory register interface.</p><p style="color:var(--ink-2)">Under our proposal, every event type is reportable, not only collisions, so that near-limit situations become visible before someone is hurt.</p>`;
+  const opRep=`<div class="doc"><div class="dh"><span>Operator report · ${o.name} (simulated)</span><span class="num">Filed ${fd(repT)}</span></div><p><b>Summary:</b> ${esc(r.title)}.</p><p>${r.type==="remote"?`The automated driving system requested remote assistance. A remote operator (supervising ${r.ratio} vehicles at the time) ${/took direct control|drove/.test(r.title)?"took direct control at low speed":"sent a path instruction"} and released the vehicle after ${r.mins} min.`:r.type==="stranded"?`The vehicle performed a minimal-risk manoeuvre and remained stationary for ${r.mins} min before being ${/remotely/.test(r.title)?"moved remotely":"recovered by field staff"}.`:isColl?`The system detected the other road user and initiated braking. According to the operator, the event was caused by: <b>${esc(r.claim)}</b>.`:`The system logged the event and continued under its safety policy. Operator's assessment: <b>${esc(r.claim)}</b>.`}</p><p>${o.access==="Redacted narratives"?"<i>[Narrative section redacted: may contain confidential business information]</i>":"Sensor snapshots and planner state attached to the report."}</p></div>`;
+  const inv=r.ver==="Independently investigated"?`<div class="doc"><div class="dh"><span>Proposed AV Investigation Unit (simulated)</span><span>${r.det===null?"Interim note":"Final finding"}</span></div>${r.det===null?"<p>Investigation in progress. Raw sensor logs, remote-operation logs and police evidence secured. A finding is due within 90 days.</p>":`<p><b>Finding:</b> ${esc(r.det)}.</p><p><b>Contributing factors:</b> ${r.det==="Automated system"?"prediction of the other road user's path was late; the vehicle's speed was within the limit but not adapted to the occluded view":r.det==="Remote operator"?"the remote operator worked with a delayed, narrow camera view ("+r.teleLat+" ms latency) and was supervising "+r.ratio+" vehicles":r.det==="Shared"?"both the other road user and the automated system contributed; the system's braking began later than a careful human driver's would":"the other road user did not give way; the automated system braked in time to reduce the impact speed"}.</p>`}${disc?`<div class="flag">The investigation does not confirm the operator's account ("${esc(r.claim)}").</div>`:""}</div>`:r.ver==="Cross-checked"?`<p>The operator's account was compared with the police report and the insurer's claim file.</p><p>${disc?'<span class="no">Inconsistent.</span> The other sources point to "'+esc(r.det)+'" rather than "'+esc(r.claim)+'".':'<span class="ok">Consistent.</span> No contradiction found between the sources.'}</p>`:`<p><span class="no">Not independently checked.</span> ${o.access!=="Full raw logs"?`${o.name} gives authorities ${o.access==="Summary only"?"only event summaries":"redacted narratives"}, so the account cannot be verified.`:"Below the threshold for investigation; the event counts in statistics as reported by the operator."}</p><p style="color:var(--ink-2)">Under our proposal, independent verification must always be possible: investigators get access to raw logs on request.</p>`;
+  const tele=["remote","stranded","fault"].includes(r.type)||r.det==="Remote operator"?`<dl class="kv"><dt>Who was in control</dt><dd>${r.type==="remote"||r.det==="Remote operator"?"Remote operator (control centre)":"Automated system, remote operator on standby"}</dd><dt>Time until operator connected</dt><dd class="num">${r.teleTake} s</dd><dt>Video link latency</dt><dd class="num">${r.teleLat} ms ${r.teleLat>300?'<span class="pill bad">degraded</span>':r.teleLat>180?'<span class="pill caution">elevated</span>':'<span class="pill good">normal</span>'}</dd><dt>Video quality</dt><dd>${r.teleLat>300?"Reduced to 480p, rear camera lost":"720p, all cameras"}</dd><dt>Vehicles per remote operator</dt><dd class="num">${r.ratio} ${r.ratio>15?'<span class="pill caution">high workload</span>':""}</dd><dt>Duration of intervention</dt><dd class="num">${r.mins} min</dd></dl><p style="color:var(--ink-2)">Remote operators see the road through cameras, with delay and a narrow view. Logging this makes "perception degradation during teleoperation" measurable.</p>`:`<p>No remote intervention was logged for this event.</p>`;
+  const meas=`<h4>Measures taken by ${o.name}</h4><ul><li>${esc(r.measure)}</li>${r.sev==="Serious injury"||r.sev==="Fatal"?"<li>Affected software version withdrawn from fleet pending review</li>":""}</ul><h4>Regulator action</h4><p>${r.action==="None"?"No sanction. The event was reported on time and is used for learning.":esc(r.action)}${r.action!=="None"?' <span class="chip sim">simulated</span>':""}</p><p style="color:var(--ink-2);font-size:13.5px">Sanctions follow just-culture principles: honest, timely reports are not punished; late, incomplete or misleading reports are.</p>`;
+  const yes='<span class="ok">Yes</span>',no='<span class="no">No</span>';
+  const srcs=`<table><thead><tr><th>Data source</th><th>Available</th><th>Used to check</th></tr></thead><tbody>
+  <tr><td>Operator report</td><td>${yes}</td><td>Event description, operator's fault claim</td></tr>
+  <tr><td>Raw vehicle logs (sensors, planner)</td><td>${o.access==="Full raw logs"?yes:no}</td><td>What the system perceived and decided</td></tr>
+  <tr><td>Remote-operation log</td><td>${o.access!=="Redacted narratives"?yes:no}</td><td>Who was in control, latency, takeover time</td></tr>
+  <tr><td>Police report</td><td>${isColl?yes:no}</td><td>Independent account of the scene, witnesses</td></tr>
+  <tr><td>Insurer claim</td><td>${r.type==="pdo"||r.type==="injury"?yes:no}</td><td>Liability, damage</td></tr>
+  <tr><td>Hospital data</td><td>${r.type==="injury"?yes:no}</td><td>Injury severity</td></tr></tbody></table>`;
+  openModal(r.title,`${sim}<span class="num">${r.id}</span><span>${fd(r.d)}</span><span>${esc(r.place)} (${r.c})</span><span>${o.name}</span>`,[["Overview",overview],["Police",police],["Operator report",opRep],["Independent review",inv],["Remote operation",tele],["Measures and sanctions",meas],["Data sources",srcs]]);
+}
+
+/* ---------- real case files ---------- */
+const CASES=[
+ {id:"cruise23",title:"Pedestrian dragged by a driverless car, and a misleading report",op:"Cruise (GM)",place:"San Francisco, USA",date:"2 Oct 2023",tags:["Artificial crash cause","Concealment","Independent verification"],action:"Permits suspended; USD 2.1 million in penalties",
+  teaser:"A robotaxi ran over a pedestrian thrown into its path, then dragged her about 6 m while pulling over. The company's first reports left this out.",
+  overview:`<p>A pedestrian was hit by a human hit-and-run driver and thrown into the path of a driverless Cruise vehicle. The robotaxi braked but ran over her. It then started a pull-over manoeuvre and dragged her about 6 m (20 ft), because it did not detect that she was underneath the car. She was seriously injured.</p><p>The crash itself was caused by another driver. The dragging was caused by the automated system's own post-crash behaviour.</p>`,
+  auth:`<p>Emergency responders freed the trapped pedestrian. The key detail, the dragging, was visible in Cruise's own vehicle video. According to NHTSA, it found that details were missing from Cruise's crash reports only after viewing video it had requested from the company.</p>`,
+  opacc:`<p>The morning after the crash, Cruise staff met NHTSA. According to the US Department of Justice, an attempt to play the full video failed because of technical problems, and the dragging was not mentioned. A written report filed the same day also omitted it. Cruise corrected the report about ten days later.</p>`,
+  indep:`<p>A review commissioned by GM reported that Cruise employees had tried to convince NHTSA not to open an investigation. This review was ordered by the company's owner, so it is not fully independent.</p><p>NHTSA opened its own investigation about two weeks after the crash. When closing it, the agency said a recall Cruise issued in November 2023 had addressed some of its concerns.</p>`,
+  meas:`<ul><li>Software recall (November 2023)</li><li>Driverless operations stopped; the CEO resigned</li><li>GM later ended its robotaxi programme (December 2024)</li></ul>`,
+  reg:`<ul><li><b>California DMV:</b> suspended Cruise's deployment and driverless testing permits</li><li><b>California Public Utilities Commission:</b> suspended the passenger permit; later accepted a USD 112,500 settlement</li><li><b>NHTSA:</b> USD 1.5 million civil penalty (2024) for incomplete crash reports</li><li><b>US Department of Justice:</b> deferred prosecution agreement (November 2024): Cruise admitted a false report, paid a USD 500,000 criminal fine, and must run a safety compliance programme and report annually for three years</li></ul>`,
+  lens:`<p><b>The company's data decided what the regulator knew.</b> Without access to raw video, the written report would have stood. This is the core argument for <i>independent verification always possible</i>.</p><p><b>Artificial crash cause:</b> a manoeuvre that made sense to the software (clear the lane after a collision) caused harm no careful human would cause. An automated system acting with high authority and little feedback is what Dekker and Woods (2024) call "wrong, strong and silent".</p><p><b>Just culture:</b> the sanctions targeted concealment, not the error itself. That is the right target.</p>`,
+  register:"1 injury collision (serious), linked post-crash manoeuvre event, late and incomplete reporting flagged.",
+  sources:[["Engadget: Cruise to pay USD 500,000 for false report","https://www.engadget.com/transportation/gms-cruise-will-pay-a-500000-fine-for-submitting-a-false-accident-report-133041789.html"],["CBC/Reuters: NHTSA fines Cruise USD 1.5 million","https://amp.cbc.ca/news/business/fine-self-driving-1.7338143"],["CarPro: penalties and deferred prosecution terms","https://www.carpro.com/blog/gms-cruise-fined-2-million-for-falsifying-crash-records"],["KRON4: DOJ account and DMV permit suspension","https://digital-release.kron4.com/?p=1984789"],["Carscoops: NHTSA closes Cruise probe","https://www.carscoops.com/?p=3138893"]]},
+ {id:"cruise_ft",title:"Robotaxi hit by a fire engine; fleet stalls after a festival",op:"Cruise (GM)",place:"San Francisco, USA",date:"Aug 2023",tags:["Fleet dynamics","Emergency services","Connectivity"],action:"Fleet cut by 50% on regulator's request",
+  teaser:"A week after approval for 24/7 paid service, a robotaxi with a passenger collided with a fire engine on an emergency call.",
+  overview:`<p>On 17 August 2023, shortly after 10 pm, a driverless Cruise car carrying a passenger entered the junction of Polk and Turk Street on green and was hit by a fire engine responding to an emergency. The fire engine had moved into the oncoming lane to get past traffic. The passenger was taken to hospital with non-severe injuries.</p><p>A week earlier, on the first night of the Outside Lands music festival, a group of Cruise vehicles stalled in the North Beach area and blocked traffic.</p>`,
+  auth:`<p>San Francisco police said the fire engine was in emergency mode with lights and siren on. Before the state approved round-the-clock robotaxi service, city transport and fire leaders had flagged dozens of reports of robotaxis stopping and blocking traffic.</p>`,
+  opacc:`<p>Cruise said its vehicle recognised the siren as soon as it could be distinguished from background noise and braked, but could not avoid the collision, partly because the fire engine's path was hard to predict. For the festival stall, Cruise blamed wireless bandwidth limits caused by the crowd.</p>`,
+  indep:`<p>The California DMV opened an investigation into "recent concerning incidents" involving Cruise vehicles.</p>`,
+  meas:`<ul><li>Complied with the fleet reduction</li></ul>`,
+  reg:`<ul><li><b>California DMV:</b> asked Cruise to cut its active fleet by 50% immediately, to at most 50 driverless vehicles by day and 150 by night, until the investigation ended. The DMV reserved the right to suspend or revoke permits.</li></ul>`,
+  lens:`<p><b>Fleet dynamics:</b> when mobile networks were overloaded, many vehicles stalled together, because they depend on the same connection for remote support. Human drivers do not fail in this correlated way.</p><p><b>Emergency services:</b> the register needs a category for obstructing or colliding with emergency vehicles, and a measure of how quickly a stranded vehicle is cleared.</p>`,
+  register:"1 injury collision (minor), emergency-vehicle involvement flagged; separate fleet-level stranding event with number of vehicles affected.",
+  sources:[["SF Standard: DMV cuts Cruise fleet by half","https://sfstandard.com/2023/08/18/california-dmv-reduces-san-francisco-cruise-fleet-by-half/"],["Tech Brew: Cruise incidents, Outside Lands stall","https://www.techbrew.com/stories/2023/08/24/cruise-robotax-snafus-san-francisco"],["Engadget: DMV investigating fire engine collision","https://www.engadget.com/california-dmv-is-investigating-a-cruise-robotaxis-collision-with-a-fire-truck-093037885.html"],["Transport Topics: Code 3 emergency mode","https://www.ttnews.com/articles/cruise-cuts-san-fran-fleet"]]},
+ {id:"waymo_bus",title:"Robotaxis drive past stopped school buses",op:"Waymo",place:"Atlanta and Austin, USA",date:"Sep–Dec 2025",tags:["Traffic violation","Artificial crash cause","Third-party data"],action:"Federal investigation; software recall",
+  teaser:"No crash happened, yet school districts documented a clear safety pattern that crash statistics would never show.",
+  overview:`<p>Waymo vehicles slowed down for school buses that had stopped with red lights flashing and stop arms out, and then drove on past them, which is illegal. A case in Atlanta on 22 September 2025 was filmed and broadcast. Austin's school district documented 19 such violations (20 by December), including one where a student had just crossed in front of the car and was still in the road. No collisions were reported.</p>`,
+  auth:`<p>The Austin Independent School District documented the violations with its bus cameras and sent a letter to NHTSA. Atlanta Public Schools reported six stop-arm violations by Waymo vehicles between May and December 2025.</p>`,
+  opacc:`<p>Waymo identified a software issue: the vehicle would first slow to stop and then proceed. According to the recall description, this could happen when the system judged that it might be impeding the bus or another priority vehicle. Chief Safety Officer Mauricio Peña announced a voluntary software recall.</p>`,
+  indep:`<p>NHTSA's Office of Defects Investigation opened a preliminary evaluation of Waymo's 5th-generation automated driving system on 17 October 2025. On 3 December it asked Waymo to answer detailed questions by 20 January 2026, including whether the recall fully fixes the problem. The outcome after January 2026 is not covered here.</p>`,
+  meas:`<ul><li>Voluntary software recall covering the 5th-generation system fleet in the US (December 2025; about 3,000 vehicles reported)</li></ul>`,
+  reg:`<ul><li><b>NHTSA:</b> preliminary evaluation opened; information request with a deadline</li><li>Local citations for stop-arm violations were reported in the media</li></ul>`,
+  lens:`<p><b>Zero crashes does not mean safe.</b> A dashboard of crash rates would show nothing here. The pattern only became visible through third-party data, the school buses' cameras. This is why the register counts violations and near-misses, and why company data must be cross-checked.</p><p><b>Artificial crash cause:</b> yielding and then proceeding is a behaviour few human drivers show; it comes from how the software weighs competing rules.</p>`,
+  register:"20+ traffic-law violation events in one category, linked to one software version; pattern detection triggers an investigation.",
+  sources:[["NPR: Waymo software recall after school bus reports","https://www.npr.org/2025/12/06/nx-s1-5635614/waymo-school-buses-recall"],["Atlanta News First: APS violations and NHTSA probe","https://www.atlantanewsfirst.com/2025/12/05/waymo-self-driving-cars-under-investigation-passing-stopped-aps-buses"],["Community Impact: Austin ISD count, NHTSA timeline","https://beta2.communityimpact.com/austin/north-central-austin/transportation/2025/12/11/waymo-recalls-software-after-self-driving-cars-pass-austin-isd-school-buses"],["CarComplaints: recall description","https://www.carcomplaints.com/news/2025/waymo-driverless-vehicles-recalled-school-bus-violations.shtml"],["BGR: Austin ISD letter details","https://bgr.com/2051218/waymo-recall-self-driving-cars-safety-concerns"]]},
+ {id:"waymo_blackout",title:"City blackout leaves robotaxis frozen at junctions",op:"Waymo",place:"San Francisco, USA",date:"20 Dec 2025",tags:["Fleet dynamics","Emergency services","Edge case"],action:"Service suspended for a day; fleet update",
+  teaser:"When traffic lights went dark across a third of the city, many robotaxis stopped in place and added to the gridlock.",
+  overview:`<p>A fire at a substation cut power to about 130,000 homes and businesses in San Francisco, nearly a third of the utility's customers there, and knocked out traffic lights across large parts of the city. Many Waymo robotaxis stopped at intersections, some in the middle of the junction, forcing other cars around them while police and fire crews were deployed. Waymo suspended service on Saturday evening and resumed it on Sunday afternoon.</p>`,
+  auth:`<p>City officials coordinated with Waymo to clear stalled vehicles. Critics, including local officials, said that stalled autonomous vehicles endanger passengers and other road users and get in the way of emergency response when it is most needed.</p>`,
+  opacc:`<p>Waymo said its vehicles are designed to treat dark traffic signals as four-way stops, but the scale of the outage meant some vehicles stayed stationary longer than usual to confirm the state of intersections. It said most active trips were completed before vehicles were returned to depots or pulled over.</p>`,
+  indep:`<p>No independent investigation was identified in the public sources we reviewed.</p>`,
+  meas:`<ul><li>Fleet-wide software update within days, to recognise and respond better to large-scale power outages</li></ul>`,
+  reg:`<p>No formal enforcement action was identified in the public sources we reviewed.</p>`,
+  lens:`<p><b>Fleet dynamics:</b> a single behaviour, copied to hundreds of vehicles, turned one infrastructure failure into a city-wide problem. The risk of a fleet is not the sum of its vehicles' risks.</p><p><b>Brittleness at the edge of the design envelope</b> (Bradshaw et al., 2013): the system worked as designed for a single dark signal, but not when the whole context changed.</p><p>The register should record how many vehicles were stranded at the same time, for how long, and whether emergency routes were blocked.</p>`,
+  register:"Fleet-level stranding event: vehicles affected, duration, emergency-route obstruction; no collisions.",
+  sources:[["AP via News4Jax: Waymos blocked roads during outage","https://www.news4jax.com/tech/2025/12/22/waymos-blocked-roads-and-caused-chaos-during-san-francisco-power-outage/"],["TransportXtra: Waymo statement","https://www.transportxtra.com/publications/evolution/news/80038/waymo-robotaxis-halted-during-san-francisco-power-outage"],["SiliconANGLE: Waymo fleet update","https://siliconangle.com/?p=726091"]]},
+ {id:"tesla",title:"Remote operators crash robotaxis; crash narratives kept secret",op:"Tesla",place:"Austin, USA",date:"Jul 2025 – May 2026",tags:["Teleoperation","Transparency","Autonomy illusion"],action:"Narratives unredacted after 10 months",
+  teaser:"Two crashes happened while a human was driving the robotaxi remotely. For almost a year, every crash description was hidden from the public.",
+  overview:`<p>In July 2025, a Tesla Robotaxi in Austin could not move off. The safety monitor asked for remote help; a teleoperator took control, accelerated, turned left and drove up a curb into a metal fence at about 8 mph. In January 2026, a teleoperator who took over to help with navigation drove into a construction barricade at about 9 mph. In both cases a safety monitor was on board and no passengers were carried.</p>`,
+  auth:`<p>No police reports on these crashes are publicly available. The information comes from Tesla's crash reports to NHTSA under its Standing General Order on crash reporting.</p>`,
+  opacc:`<p>Until May 2026, Tesla redacted the narrative of every Robotaxi crash report as "confidential business information". It was the only operator in the database to do so. In May 2026 it unredacted all 17 narratives. Separately, a July 2025 crash first reported as property damage only was updated five months later to an injury with hospitalisation.</p>`,
+  indep:`<p>Analysis has come from journalists using the public NHTSA data. Crash-rate comparisons are uncertain because Tesla's mileage figures are self-reported and published only occasionally, for example about 250,000 miles stated on an investor call.</p>`,
+  meas:`<ul><li>Crash narratives made public (May 2026)</li></ul>`,
+  reg:`<p>Crashes were reported under NHTSA's Standing General Order. No enforcement action linked to these crashes was identified in the sources we reviewed.</p>`,
+  lens:`<p><b>Autonomy is an illusion:</b> a "driverless" vehicle was in fact driven by a human, remotely, at the moment of the crash.</p><p><b>Perception degradation during teleoperation:</b> a remote driver sees through cameras with delay and a limited view, which makes simple manoeuvres like a curb error more likely.</p><p><b>Transparency:</b> a reporting duty is worth little if the content can be hidden. The register must make narratives public by default.</p>`,
+  register:"2 property-damage collisions with fault 'Remote operator'; teleoperation latency and handover logged; redaction flagged as a reporting deficiency.",
+  sources:[["Electrek: remote operators crashing Robotaxis","https://electrek.co/2026/10/15/tesla-remote-operators-crashing-robotaxis/"],["TechCrunch: two crashes involving teleoperators","https://www.techcrunch.com/2026/05/15/tesla-reveals-two-robotaxi-crashes-involving-teleoperators/"],["Electrek: Tesla unredacts crash narratives","https://electrek.co/2026/05/15/tesla-unredacts-robotaxi-crash-narratives-nhtsa/"],["Automotive World: redactions and upgraded injury report","https://www.automotiveworld.com/news/tesla-robotaxis-reporting-crash-rates-far-higher-than-humans/"]]},
+ {id:"uber",title:"First pedestrian killed by a self-driving test car",op:"Uber ATG",place:"Tempe, Arizona, USA",date:"18 Mar 2018",tags:["Deskilling","Safety culture","Blame"],action:"Safety driver convicted; company not charged",
+  teaser:"A test car in autonomous mode killed a woman crossing the road. The backup driver was watching TV on her phone.",
+  overview:`<p>An Uber test vehicle (Volvo XC90) driving in autonomous mode at about 40 mph struck and killed Elaine Herzberg, 49, who was walking a bicycle across the road at night outside a crosswalk. The backup safety driver was streaming a TV show on her phone.</p>`,
+  auth:`<p>Tempe police reported that the safety driver repeatedly looked down instead of at the road. Prosecutors decided in 2019 that Uber was not criminally liable. The safety driver was charged with negligent homicide in 2020, pleaded guilty to endangerment in 2023 and was sentenced to three years of supervised probation.</p>`,
+  opacc:`<p>Uber stopped testing, expressed regret and said it remained committed to improving safety. It later sold its self-driving unit to Aurora (2020).</p>`,
+  indep:`<p>The US National Transportation Safety Board (2019) named the safety driver's distraction as the probable cause. It also found that Uber ATG had an inadequate safety culture, inadequate safety risk assessment and ineffective oversight of its operators. The software was not designed to expect pedestrians outside crosswalks; it determined that braking was needed only 1.3 seconds before impact, and Uber had disabled the Volvo's own emergency braking. Arizona and NHTSA were criticised for insufficient policies. The NTSB recommended making safety self-assessment reports mandatory.</p>`,
+  meas:`<ul><li>Testing suspended; safety programme revised</li><li>Self-driving unit sold (2020)</li></ul>`,
+  reg:`<ul><li>Criminal case against the safety driver only</li><li>NTSB recommendations on safety reporting</li></ul>`,
+  lens:`<p><b>Deskilling and the ironies of automation:</b> a human was asked to monitor a system that was almost always right, for hours. Attention fades in exactly this role.</p><p><b>Who gets blamed:</b> the NTSB pointed to the organisation, yet the only criminal consequence fell on the lowest-level operator. Dekker and Breakey (2016) warn that this kind of retributive response teaches people to stay silent, not to report.</p><p>Relevance for Switzerland: remote supervisors watching many vehicles face the same trap.</p>`,
+  register:"1 fatal collision; contributing factors at organisation level recorded alongside individual actions.",
+  sources:[["Smart Cities Dive: NTSB blames driver and safety culture","https://www.smartcitiesdive.com/news/ntsb-blames-driver-inadequate-safety-culture-for-uber-av-crash/567673/"],["SiliconANGLE: NTSB final report","https://siliconangle.com/?p=497441"],["CNN: safety driver pleads guilty","https://edition.cnn.com/2023/07/29/business/uber-self-driving-car-death-guilty"],["Yahoo/Guardian: negligent homicide charge, 1.3 s detail","https://news.yahoo.com/safety-driver-charged-2018-incident-201022606.html"]]}
+];
+$("#caseGrid").innerHTML=CASES.map(c=>`<button type="button" class="case" data-case="${c.id}"><span class="k">${c.date} · ${c.place} · ${c.op}</span><h3>${c.title}</h3><p>${c.teaser}</p><span class="tags">${c.tags.map(t=>`<span class="chip">${t}</span>`).join("")}</span><span class="act">Outcome: ${c.action}</span><span class="more">Open case file →</span></button>`).join("");
+$("#caseGrid").addEventListener("click",e=>{const b=e.target.closest("[data-case]");if(!b)return;const c=CASES.find(x=>x.id===b.dataset.case);
+  openModal(c.title,`<span class="chip real">Real case</span><span>${c.date}</span><span>${c.place}</span><span>${c.op}</span>`,[
+   ["Overview",c.overview+`<h4>How the proposed register would record it</h4><p>${c.register}</p>`],["Authorities",c.auth],["Company account",c.opacc],["Independent findings",c.indep],["Company measures",c.meas],["Regulator action",c.reg],["Course lens",c.lens],["Sources",`<ul>${c.sources.map(s=>`<li><a href="${s[1]}" target="_blank" rel="noopener">${esc(s[0])}</a></li>`).join("")}</ul><p style="color:var(--ink-2);font-size:13px">Summaries are our own paraphrases of these sources.</p>`]]);});
+
+/* ---------- calculator ---------- */
+const PRESETS={
+ swissre:{ev:2,km:40.72,bm:0.6385,note:"Swiss Re and Waymo (2024): 2 bodily-injury claims over 25.3 million miles (40.7 million km); about 26 claims expected for human drivers over the same distance. Published jointly with Waymo."},
+ pilot:{ev:0,km:1.5,bm:0.0078,note:"Simulated: 25 vehicles driving 60,000 km each in a year, with no fatality. Benchmark: about 1.26 deaths per 100 million vehicle miles on US roads (NHTSA, 2023), i.e. 0.0078 per million km."},
+ scen:null
+};
+function setPreset(k){let p=PRESETS[k];if(k==="scen"){const n=recs.filter(r=>r.type==="injury").length;p={ev:n,km:+(kmTotal()/1e6).toFixed(2),bm:1.5,note:"Simulated scenario on this page: injury collisions over all driverless km so far. Benchmark 1.5 per million km is illustrative."};}
+  $("#cEv").value=p.ev;$("#cKm").value=p.km;$("#cBm").value=p.bm;$("#cBmNote").textContent=p.note;renderCalc();}
+document.querySelectorAll("[data-p]").forEach(b=>b.addEventListener("click",()=>setPreset(b.dataset.p)));
+["#cEv","#cKm","#cBm","#cCl"].forEach(id=>$(id).addEventListener("input",renderCalc));
+function renderCalc(){
+  const k=Math.max(0,Math.round(+$("#cEv").value||0)),km=Math.max(1e-6,+$("#cKm").value||0),bm=Math.max(0,+$("#cBm").value||0),cl=+$("#cCl").value;
+  const ci=poissonCI(k,cl).map(v=>v/km),rate=k/km;
+  const el=$("#ciChart");const W=Math.max(300,el.clientWidth||460),H=120,ml=16,mr=16;const xmax=Math.max(ci[1],bm,rate)*1.15||1;const x=v=>ml+v/xmax*(W-ml-mr);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Confidence interval compared with benchmark">`;
+  const step=niceStep(xmax/4);for(let v=0;v<=xmax;v+=step){s+=`<line x1="${x(v)}" x2="${x(v)}" y1="20" y2="${H-26}" stroke="var(--grid)"/><text x="${x(v)}" y="${H-10}" text-anchor="middle" class="num">${v<0.01&&v>0?v.toExponential(0):+v.toPrecision(3)}</text>`;}
+  s+=`<rect x="${x(ci[0])}" y="44" width="${Math.max(2,x(ci[1])-x(ci[0]))}" height="22" rx="4" fill="var(--q2)" opacity=".9"/>`;
+  s+=`<circle cx="${x(rate)}" cy="55" r="6" fill="var(--s1)" stroke="var(--panel)" stroke-width="2"/>`;
+  s+=`<line x1="${x(bm)}" x2="${x(bm)}" y1="16" y2="${H-26}" stroke="var(--bad)" stroke-width="2" stroke-dasharray="4 3"/><text x="${Math.min(x(bm),W-90)}" y="12" style="fill:var(--bad);font-weight:700">Human benchmark</text>`;
+  s+=`<text x="${x(ci[0])}" y="82" style="fill:var(--ink-2)">${Math.round(cl*100)}% interval</text>`;
+  s+=`</svg><div style="font-size:12px;color:var(--muted);text-align:center">Events per million km</div>`;el.innerHTML=s;
+  const v=$("#verdict");const p=n=>n<0.01?n.toPrecision(2):fmt2(n);
+  if(ci[1]<bm){v.className="verdict good";v.innerHTML=`<strong>Lower than the benchmark, with ${Math.round(cl*100)}% confidence</strong>Rate ${p(rate)} per M km (interval ${p(ci[0])} to ${p(ci[1])}). Even the upper end of the interval is below ${p(bm)}.`;}
+  else if(ci[0]>bm){v.className="verdict bad";v.innerHTML=`<strong>Higher than the benchmark, with ${Math.round(cl*100)}% confidence</strong>Rate ${p(rate)} per M km (interval ${p(ci[0])} to ${p(ci[1])}).`;}
+  else{v.className="verdict caution";v.innerHTML=`<strong>Inconclusive: the data cannot tell</strong>Rate ${p(rate)} per M km, but the interval (${p(ci[0])} to ${p(ci[1])}) includes the benchmark of ${p(bm)}.`;}
+  const need=bm>0?(-Math.log(1-cl))/bm:Infinity;
+  $("#calcNote").innerHTML=`With zero events, a fleet needs about <b>${need>=1000?fmt(Math.round(need)):fmt1(need)} million km</b> to show a rate below this benchmark at ${Math.round(cl*100)}% confidence. And this only holds if the counts and the km are correct, which is why independent verification matters.`;
+}
+
+/* ---------- disclosure table ---------- */
+$("#discTable").innerHTML=`<thead><tr><th>Operator</th><th>Per-crash descriptions in public US database</th><th>Distance driven published</th><th>Safety comparison with confidence intervals</th><th>Third-party analysis</th></tr></thead><tbody>
+<tr><td><b>Waymo</b></td><td><span class="pill good">Yes</span></td><td><span class="pill good">Yes, by city</span></td><td><span class="pill good">Yes, own analysis</span></td><td><span class="pill caution">Swiss Re study, co-authored</span></td></tr>
+<tr><td><b>Tesla</b></td><td><span class="pill caution">Redacted Jul 2025 – May 2026, then published</span></td><td><span class="pill caution">Occasional statements</span></td><td><span class="pill bad">Not found</span></td><td><span class="pill caution">Journalists using NHTSA data</span></td></tr>
+<tr><td><b>Baidu Apollo Go</b> (AmiGo partner in Switzerland)</td><td><span class="pill neutral">Not applicable (operates in China, UAE, Switzerland)</span></td><td><span class="pill caution">Aggregate totals in press releases</span></td><td><span class="pill bad">Not found</span></td><td><span class="pill bad">Not found</span></td></tr>
+<tr><td><b>Cruise</b> (ceased)</td><td><span class="pill bad">Incomplete reports, penalised</span></td><td><span class="pill neutral">–</span></td><td><span class="pill neutral">–</span></td><td><span class="pill neutral">GM-commissioned review</span></td></tr></tbody>`;
+
+/* ---------- requirements table (from our conclusion) ---------- */
+$("#reqTable").innerHTML=`<thead><tr><th>Requirement</th><th>Phase</th><th>What it means in practice</th><th>Switzerland today</th><th>Lesson from</th></tr></thead><tbody>
+<tr><td>Regulators set the rules, made by experts and advised by companies</td><td>Pre-deployment</td><td>Federal safety criteria for approving operating areas, written by an expert body; companies consulted but not drafting</td><td><span class="pill caution">Partly in place</span><br><small>Ordinance in force; cantons approve areas; type approval relies on foreign authorities</small></td><td>Uber 2018 (NTSB: state policies insufficient)</td></tr>
+<tr><td>Edge cases tested independently</td><td>Pre-deployment</td><td>Swiss scenario catalogue (trams, snow, mountain roads, school patrols, dark traffic lights) tested by an accredited body before approval</td><td><span class="pill neutral">Proposed addition</span></td><td>Waymo blackout 2025, school buses 2025</td></tr>
+<tr><td>Independent verification always possible</td><td>During deployment</td><td>Legal right for investigators to raw sensor, video and remote-operation logs within 24 h; an AV investigation unit, e.g. by extending the mandate of the Swiss Transportation Safety Investigation Board (STSB)</td><td><span class="pill neutral">Proposed addition</span></td><td>Cruise 2023</td></tr>
+<tr><td>Company data are cross-checked</td><td>During deployment</td><td>Operator reports matched with police, insurer and hospital records; mismatches flagged publicly</td><td><span class="pill neutral">Proposed addition</span></td><td>Waymo school buses (bus cameras), Swiss Re claims</td></tr>
+<tr><td>More data: remote interventions, confidence intervals, exposure</td><td>During deployment</td><td>All 8 event types reportable within 24 h; km per canton; rates published with confidence intervals; narratives public by default</td><td><span class="pill neutral">Proposed addition</span></td><td>Tesla 2025–26</td></tr>
+<tr><td>Just reporting culture</td><td>During deployment</td><td>Confidential channel for remote supervisors and staff; sanctions for concealment and late reporting, not honest error</td><td><span class="pill neutral">Proposed addition</span></td><td>Cruise 2023, Uber 2018</td></tr></tbody>`;
+
+/* ---------- sources list ---------- */
+const SRC=[["Vischer via Mondaq: Swiss regulatory framework (2026)","https://www.mondaq.com/rail-road-cycling/1752990/automated-driving-swiss-regulatory-framework"],["SAAM: robotaxis and the Swiss legal framework","https://www.saam.swiss/?p=9754"],["bluewin: Federal Council adopts ordinance","https://www.bluewin.ch/en/news/switzerland/federal-government-allows-autonomous-driving-on-freeways-from-march-2485567.html"],["PostAuto: AmiGo Level 4 permit (2026)","https://www.postauto.ch/en/about-us-and-news/media/press-releases/2026/milestone-for-autonomous-mobility-in-switzerland"],["The Next Web: Apollo Go Level 4 approval","https://thenextweb.com/news/baidu-apollo-go-switzerland-level-4"],["Waymo Safety Impact Hub","https://waymo.com/safety/impact"],["EVwire: Waymo 271.3 million miles update","https://evwire.com/p/waymo-safety-data-fewer-injury-crashes-results"],["Waymo blog: Swiss Re study","https://waymo.com/blog/2024/12/new-swiss-re-study-waymo/"]];
+$("#srcList").innerHTML=SRC.map(s=>`<li><a href="${s[1]}" target="_blank" rel="noopener">${esc(s[0])}</a></li>`).join("")+"<li>Case-file sources are listed inside each case file.</li>";
+
+/* ---------- live simulation ---------- */
+let paused=false,timer=null;
+const W8=TYPES.map(t=>t.rate);
+function addLive(){
+  const o=wpick(OPS,OPS.map(x=>x.fleet),lrnd);const c=wpick(Object.keys(o.cant),Object.values(o.cant),lrnd);
+  const tk=wpick(TYPES.map(t=>t.k),TYPES.map(t=>t.rate*(o.mult[t.k]||1)),lrnd);
+  const r=makeRec(o,c,tk,10,scenNow(),lrnd);r.status=["injury","pdo","nearmiss"].includes(tk)?"Under investigation":"Open";if(r.ver==="Independently investigated")r.det=null;r.delay=Math.min(r.delay,2);r.action="None";
+  seq++;r.id="AVR-28-"+String(seq).padStart(5,"0");recs.unshift(r);liveAdded++;
+  // add km so rates stay realistic
+  kmTab[o.k][c][10]+=180;
+  renderKPIs(tk);renderFeed(r.id);renderMonthChart();renderPyramid();renderMap();renderCanton();renderOps();if(!$("#modal").classList.contains("open")&&page===0)renderReg();
+}
+function schedule(){clearTimeout(timer);if(paused)return;timer=setTimeout(()=>{addLive();schedule();},5000+lrnd()*7000);}
+$("#pauseBtn").addEventListener("click",()=>{paused=!paused;$("#pauseBtn").textContent=paused?"Resume live feed":"Pause live feed";$("#pauseBtn").setAttribute("aria-pressed",paused);$("#livePill").classList.toggle("paused",paused);$("#liveText").textContent=paused?"Paused":"Live, scenario 2028";schedule();});
+function tick(){const n=scenNow();$("#clock").textContent="Scenario time: "+n.getDate()+" Nov 2028, "+String(n.getHours()).padStart(2,"0")+":"+String(n.getMinutes()).padStart(2,"0")+":"+String(n.getSeconds()).padStart(2,"0");}
+setInterval(tick,1000);tick();
+
+/* ---------- misc ---------- */
+function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(t._h);t._h=setTimeout(()=>t.style.display="none",2600);}
+document.querySelectorAll(".langs button").forEach(b=>b.addEventListener("click",()=>{if(b.dataset.lang!=="EN")toast(b.dataset.lang+" version not available in this prototype");}));
+const navLinks=[...document.querySelectorAll("nav.main a")];
+const secIds=["overview","regions","operators","register","cases","evidence","proposal"];
+window.addEventListener("scroll",()=>{let cur="overview";secIds.forEach(id=>{const el=document.getElementById(id);if(el&&el.getBoundingClientRect().top<120)cur=id;});navLinks.forEach(a=>a.classList.toggle("on",a.getAttribute("href")==="#"+cur));},{passive:true});
+let rz;window.addEventListener("resize",()=>{clearTimeout(rz);rz=setTimeout(()=>{renderMonthChart();renderMap();renderOps();renderCalc();},150);});
+const mq=window.matchMedia("(prefers-color-scheme: dark)");mq.addEventListener&&mq.addEventListener("change",()=>{renderMonthChart();renderMap();});
+
+renderKPIs();renderMonthChart();renderFeed();renderPyramid();renderMap();renderCanton();renderOps();renderReg();setPreset("swissre");schedule();
+})();
+</script>
+</body>
+</html>
